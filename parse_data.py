@@ -1,5 +1,6 @@
 import gzip
 import xml.etree.ElementTree as ET
+import re
 from Bio import SwissProt
 
 
@@ -23,22 +24,42 @@ def parse_swiss(filename):
 
     Args:
         filename : The path to the file to be parsed
+
+    Returns:
+        dict: A dictionary where each key is an accession and the corresponding value is a dictionary
+            containing extracted EC numbers and a boolean indicating their completeness.
     """
     with open(filename) as handle:
         data = {}
+
         for record in SwissProt.parse(handle):
             if "EC=" in record.description:
-                entry_name = record.entry_name
-                # TODO need all accession number ?
-                accession = record.accessions[
-                    0
-                ]  # get the first accession number, get all ?
+                accession = record.accessions[0]
                 data[accession] = {}
-                data[accession]["entry_name"] = entry_name
+
+                for desc in record.description:
+                    if isinstance(desc, str):  # list of type unknown so need to check its type to use regex on it
+                        ec_numbers = re.findall(r"EC=([\d.-]+)", desc)
+                        data[accession]["ec_numbers"] = ec_numbers
+                        if "-" in ec_numbers:
+                            ec_complete = False
+                            data[accession]["ec_complete"] = ec_complete
+                        else:
+                            ec_complete = True
+                            data[accession]["ec_complete"] = ec_complete
+
     return data
 
 
-# parse_swiss(file_output)
+def analyse_swiss(filename):
+    with open(filename) as handle:
+        for record in SwissProt.parse(handle):
+            if record.accessions[0] == "P26670":
+                for a in dir(record):
+                    if not a.startswith("__"):
+                        print("Attribute: ", a, "\n", getattr(record, a))
+            if record.accessions[0] == "P26670":
+                break
 
 
 def parse_explorenz(filename):
@@ -50,7 +71,8 @@ def parse_explorenz(filename):
         filename : The path to the file to be parsed
 
     Returns:
-        return a dict of a dict containing the info of each ec
+        dict: A dictionary of dictionaries, where each top-level key is an EC number and
+            the corresponding value is a dictionary containing its associated information.
     """
     tree = ET.parse(filename)
     root = tree.getroot()
@@ -64,3 +86,16 @@ def parse_explorenz(filename):
                     if field.attrib["name"] != "ec_num":
                         data[ec_num.text][field.attrib["name"]] = field.text
     return data
+
+
+"""
+----------------Test---------------
+"""
+# parse_swiss(file_output)
+# analyse_swiss(file_output)
+
+file_explore = "../data/enzyme-data.xml"
+# data_explore = parse_explorenz(file_explore)
+#
+# for key in data_explore["1.1.1.1"]:
+#    print("Cle : ", key, "\n", "Value: ", data_explore["1.1.1.1"][key])
