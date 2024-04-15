@@ -1,24 +1,60 @@
+import os
+import pickle
 import gzip
 import xml.etree.ElementTree as ET
 import re
 from Bio import SwissProt
 
 
-file_path = "uniprot_sprot.dat.gz"
+def gunzip_file(input_file, output_file):
+    """
+    This function decompress a .gz file and write it as a decompressed file
+    Args:
+        input_file : path to the file to be decompressed
+        output_file: path and name to the decompressed file
+    """
+    try:
+        with gzip.open(input_file, "rb") as f_in:
+            with open(output_file, "wb") as f_out:
+                f_out.write(f_in.read())
+    except Exception as e:
+        print(f"Error occurred while trying to unzip: {input_file}, error: {e}")
 
 
-def decompress_file(input_file, output_file):
-    with gzip.open(input_file, "rb") as f_in:
-        with open(output_file, "wb") as f_out:
-            f_out.write(f_in.read())
+def save_pickle(data: dict, output_file: str, path: str):
+    """
+    This function stores a dictionary of parsed data as a pickle file.
+    Args:
+        data : a dictionary containing the data
+        output_file : name of the output file
+        path : the path where you want the file to be stored
+    """
+    file_path = os.path.join(path, output_file)
+    try:
+        with open(file_path, "wb") as f:
+            pickle.dump(data, f)
+    except Exception as e:
+        print(f"Error occurred while saving pickle file: {e}")
 
 
-# Example usage:
-file_output = "../data/uniprot_sprot.dat"
-# decompress_file(file_path, file_output)
+def load_pickle(path):
+    """
+    This function loads a pickle file.
+    Args:
+        path: The path to the pickle file.
+    Returns:
+        The data loaded from the pickle file.
+    """
+    try:
+        with open(path, "rb") as f:
+            data = pickle.load(f)
+        return data
+    except Exception as e:
+        print(f"Error occurred while loading pickle file: {e}")
+        return None
 
 
-def parse_swiss(filename):
+def parse_swiss(filename: str, path=None):
     """
     This function parse the data of dat file from uniprot
 
@@ -36,33 +72,29 @@ def parse_swiss(filename):
             if "EC=" in record.description:
                 accession = record.accessions[0]
                 data[accession] = {}
+                ec_numbers = []
 
-                for desc in record.description:
-                    if isinstance(desc, str):  # list of type unknown so need to check its type to use regex on it
-                        ec_numbers = re.findall(r"EC=([\d.-]+)", desc)
-                        data[accession]["ec_numbers"] = ec_numbers
-                        if "-" in ec_numbers:
+                if isinstance(record.description, str):
+                    ec_numbers = re.findall(r"EC=([\d.-]+)", record.description)
+                    listEc = []
+                    for ec in ec_numbers:
+                        if ec == "6.2.1.":
+                            print(record.description)
+                        if "-" in ec:
                             ec_complete = False
-                            data[accession]["ec_complete"] = ec_complete
+                            listEc.append((ec, ec_complete))
                         else:
                             ec_complete = True
-                            data[accession]["ec_complete"] = ec_complete
+                            listEc.append((ec, ec_complete))
+                    data[accession]["ec_numbers"] = listEc
+    output = "swiss.pickle"
+    path = "/home/demonz/programmation/stage/orenza/af2_web/bioi2server/orenza/data/pickle"
+    save_pickle(data, output, path)
 
     return data
 
 
-def analyse_swiss(filename):
-    with open(filename) as handle:
-        for record in SwissProt.parse(handle):
-            if record.accessions[0] == "P26670":
-                for a in dir(record):
-                    if not a.startswith("__"):
-                        print("Attribute: ", a, "\n", getattr(record, a))
-            if record.accessions[0] == "P26670":
-                break
-
-
-def parse_explorenz(filename):
+def parse_explorenz(filename, path=None):
     """
     This function parse the data of an xml file from parse_explorenz
     and extract the entry info of the ec number
@@ -85,13 +117,50 @@ def parse_explorenz(filename):
                 for field in row.findall("field"):
                     if field.attrib["name"] != "ec_num":
                         data[ec_num.text][field.attrib["name"]] = field.text
+    output = "explorenz.pickle"
+    path = "/home/demonz/programmation/stage/orenza/af2_web/bioi2server/orenza/data/pickle"
+    save_pickle(data, output, path)
+
     return data
 
 
 """
 ----------------Test---------------
 """
-# parse_swiss(file_output)
+
+
+def analyse_swiss(filename):
+    with open(filename) as handle:
+        for record in SwissProt.parse(handle):
+            if record.accessions[0] == "P26670":
+                for a in dir(record):
+                    if not a.startswith("__"):
+                        print("Attribute: ", a, "\n", getattr(record, a))
+            if record.accessions[0] == "P26670":
+                break
+
+
+def type_swiss(dataPickle):
+    with open(dataPickle, "rb") as f:
+        i = 0
+        data = pickle.load(f)
+        for key in data:
+            print("data[key]: ", data[key])
+            print(type(data[key]["ec_numbers"]))
+            i += 1
+            if i > 1000:
+                break
+
+
+sprot_path = "/home/demonz/programmation/stage/orenza/af2_web/bioi2server/orenza/data/uniprot_sprot.dat"
+explorenz_path = "/home/demonz/programmation/stage/orenza/af2_web/bioi2server/orenza/data/enzyme-data.xml"
+
+parse_swiss(sprot_path)
+# parse_explorenz(explorenz_path)
+# load_pickle(explorenz_path)
+# type_swiss("../data/pickle/swiss.pickle")
+
+
 # analyse_swiss(file_output)
 
 file_explore = "../data/enzyme-data.xml"
