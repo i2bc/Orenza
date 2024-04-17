@@ -10,5 +10,5 @@ def link_swiss_explorenz():
                 enzyme = Enzyme.objects.get(pk=e.number)
                 if enzyme.orphan:
                     enzyme.orphan = False
-                enzyme.sprot_count += count
+                enzyme.sprot_count = count
                 enzyme.save()

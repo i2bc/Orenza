@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import os
 import pickle
 import gzip
@@ -77,9 +79,14 @@ def parse_swiss(filename: str, path=None):
                 if isinstance(record.description, str):
                     ec_numbers = re.findall(r"EC=([\d.-]+)", record.description)
                     listEc = []
+                    already_listed = False
                     for ec in ec_numbers:
-                        if ec == "6.2.1.":
-                            print(record.description)
+                        for tup in listEc:  # Prevent adding multiple time the same ec number in the tuple
+                            if ec in tup:
+                                already_listed = True
+                                continue
+                        if already_listed:
+                            continue
                         if "-" in ec:
                             ec_complete = False
                             listEc.append((ec, ec_complete))
@@ -155,7 +162,7 @@ def type_swiss(dataPickle):
 sprot_path = "/home/demonz/programmation/stage/orenza/af2_web/bioi2server/orenza/data/uniprot_sprot.dat"
 explorenz_path = "/home/demonz/programmation/stage/orenza/af2_web/bioi2server/orenza/data/enzyme-data.xml"
 
-parse_swiss(sprot_path)
+# parse_swiss(sprot_path)
 # parse_explorenz(explorenz_path)
 # load_pickle(explorenz_path)
 # type_swiss("../data/pickle/swiss.pickle")
@@ -163,7 +170,7 @@ parse_swiss(sprot_path)
 
 # analyse_swiss(file_output)
 
-file_explore = "../data/enzyme-data.xml"
+# file_explore = "../data/enzyme-data.xml"
 # data_explore = parse_explorenz(file_explore)
 #
 # for key in data_explore["1.1.1.1"]:
