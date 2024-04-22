@@ -5,6 +5,7 @@ import download
 import utils
 import parse
 import populate
+import link
 
 
 with open("./config.yaml", "r") as yaml_file:
@@ -78,3 +79,8 @@ except ValueError as e:
 #    populate.uniprot(filename=trembl_pickle, database=database, database_type="trembl")
 # except ValueError as e:
 #    print(e)
+
+
+# Link database:
+link.swiss_explorenz(database=database, database_type="sprot")
+# link.swiss_explorenz(database=database, database_type="trembl")
