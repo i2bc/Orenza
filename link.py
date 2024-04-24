@@ -2,11 +2,17 @@ import utils
 import sys
 
 
-def swiss_explorenz(database: str, database_type: str):
-    if database_type not in ["sprot", "trembl"]:
-        raise ValueError("Invalid database_type. Allowed values are 'sprot' or 'trembl'.")
+def swiss_explorenz(database: str, table_type: str):
+    """
+    Update enzyme table based on the information of the joint table of ec and sprot or trembl
+    Args:
+        database : name and path of the database to Update
+        table_type: update enzyme based on trembl or sprot
+    """
+    if table_type not in ["sprot", "trembl"]:
+        raise ValueError("Invalid table_type. Allowed values are 'sprot' or 'trembl'.")
 
-    joint_table = f"orenza_{database_type}_ec_numbers"
+    joint_table = f"orenza_{table_type}_ec_numbers"
     ec_table = "orenza_ec"
     enzyme_table = "orenza_enzyme"
 
@@ -36,22 +42,3 @@ def swiss_explorenz(database: str, database_type: str):
             cur.execute(query_update, data_update)
             con.commit()
     con.close()
-
-
-swiss_explorenz("./db/db_orenza.sqlite3", "sprot")
-
-# WARNING: keep to test if i get same number between both functions
-# from orenza.models import Enzyme, Sprot, Ec
-#
-#
-# def link_swiss_explorenz():
-#    ec = Ec.objects.all()
-#    for e in ec:
-#        if e.complete:
-#            if Enzyme.objects.filter(pk=e.number).exists():
-#                count = len(e.sprots.all())
-#                enzyme = Enzyme.objects.get(pk=e.number)
-#                if enzyme.orphan:
-#                    enzyme.orphan = False
-#                enzyme.sprot_count = count
-#                enzyme.save()

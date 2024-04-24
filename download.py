@@ -4,7 +4,8 @@ import requests
 
 
 def http(url, local_file):
-    """Downloads a file from the specified URL and saves it with the given filename.
+    """
+    Downloads a file from the specified URL and saves it with the given filename (using http link).
 
     Args:
         url: The URL of the file to download.
@@ -28,18 +29,17 @@ def http(url, local_file):
         return False
 
 
-if __name__ == "__main__":
-    url = "https://www.enzyme-database.org/downloads/enzyme-data.xml.gz"
-    filename = "explorenz_data.xml.gz"
-    success = http(http, filename)
-
-    if success:
-        print(f"File downloaded successfully: {filename}")
-    else:
-        print("Download failed!")
-
-
 def ftp(ftp_host, remote_file, local_file, ftp_user="anonymous", ftp_passwd="anonymous@"):
+    """
+    Download a file from the specified URL using the ftp protocol
+
+    Args:
+        ftp_host: Name of the host
+        remote_file: path to the remote file excluding the ftp_host name
+        local_file: name and location of the downloaded file
+        ftp_user: name to use if needed to connect, anonymous by default
+        fpt_passwd: password to use if needed to connect, anonymous@ by default
+    """
     try:
         # Connect to the FTP server
         ftp = FTP(ftp_host)
@@ -58,6 +58,16 @@ def ftp(ftp_host, remote_file, local_file, ftp_user="anonymous", ftp_passwd="ano
         print(f"Error: {e}")
         sys.exit(1)
 
+
+# if __name__ == "__main__":
+#    url = "https://www.enzyme-database.org/downloads/enzyme-data.xml.gz"
+#    filename = "explorenz_data.xml.gz"
+#    success = http(http, filename)
+#
+#    if success:
+#        print(f"File downloaded successfully: {filename}")
+#    else:
+#        print("Download failed!")
 
 # if __name__ == "__main__":
 #    # FTP server credentials

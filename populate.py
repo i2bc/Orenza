@@ -4,30 +4,23 @@ import sys
 import parse
 import utils
 
-# TODO: delete these lines when worked enough with sqlite3
-# con = sqlite3.connect("../../db_orenza.sqlite3")
-#
-# cur = con.cursor()
-#
-# res = cur.execute("SELECT * FROM orenza_enzyme")
-# res = cur.execute("SELECT ec_number FROM orenza_enzyme")
-# print("Test: ")
-# print(res.fetchone())
-# print("Start check table exist")
-# cur.execute("SELECT EXISTS (SELECT 1 FROM orenza_enzyme);")
-# print("Resultat: ", cur.fetchone()[0])
-#
-# con.commit()
-# con.close()
 
+def uniprot(filename, database, table_type):
+    """
+    Initialize the table trembl or sprot with the info of the parsing
+    and the joint table between ec and this one
 
-def uniprot(filename, database, database_type):
-    if database_type not in ["sprot", "trembl"]:
-        raise ValueError("Invalid database_type. Allowed values are 'sprot' or 'trembl'.")
+    Args:
+        filename: the name and path of the data to be added to the database (pickle format)
+        database: the name and path of the database to be updated
+        table_type: need to precise the table to be updated trembl or sprot
+    """
+    if table_type not in ["sprot", "trembl"]:
+        raise ValueError("Invalid table_type. Allowed values are 'sprot' or 'trembl'.")
 
-    print(f"Start updating {database_type} database at: {utils.current_time()}")
-    uniprot_table = f"orenza_{database_type}"
-    joint_table = f"orenza_{database_type}_ec_numbers"
+    print(f"Start updating {table_type} database at: {utils.current_time()}")
+    uniprot_table = f"orenza_{table_type}"
+    joint_table = f"orenza_{table_type}_ec_numbers"
     ec_table = "orenza_ec"
     con = utils.create_connection(database)
     if not con:
@@ -66,13 +59,20 @@ def uniprot(filename, database, database_type):
                     query_ec = f"INSERT INTO {ec_table} (number, complete) VALUES(?, ?)"
                     cur.execute(query_ec, tup)
             con.commit()
-    print(f"Finished updating {database_type} database at: {utils.current_time()}")
+    print(f"Finished updating {table_type} database at: {utils.current_time()}")
 
 
-def explorenz(filename, database_name):
+def explorenz(filename, database):
+    """
+    Initialize the enzyme table with the info from the parsing
+
+    Args:
+        filename: path and name of the parsing file (pickle format)
+        database: path and name of the database to be updated
+    """
     print(f"Start updating explorenz database at {utils.current_time()}")
     table = "orenza_enzyme"
-    con = utils.create_connection(database_name)
+    con = utils.create_connection(database)
     if not con:
         print("Couldn't load the database properly see previous error messages")
         sys.exit()
@@ -92,11 +92,12 @@ def explorenz(filename, database_name):
             comments = enzyme_data[key]["comments"]
             orphan = True
             sprot_count = 0
+            trembl_count = 0
             query = f"""
                         INSERT INTO {table} (ec_number, reaction, comments, orphan, sprot_count)
-                        VALUES (?, ?, ?, ?, ?)
+                        VALUES (?, ?, ?, ?, ?, ?)
                         """
-            cur.execute(query, (ec_number, reaction, comments, orphan, sprot_count))
+            cur.execute(query, (ec_number, reaction, comments, orphan, sprot_count, trembl_count))
 
         con.commit()
         con.close()
