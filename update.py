@@ -18,20 +18,22 @@ database = config["database"]
 explorenz_url = config["explorenz"]["url"]
 explorenz_data_compressed = os.path.join(output_folder, "data", config["explorenz"]["output_file"])
 explorenz_data_uncompressed = os.path.splitext(explorenz_data_compressed)[0]  # remove the compressed extension
-explorenz_pickle = os.path.join(output_folder, "data", "explorenz.pickle")
+explorenz_ec_pickle = os.path.join(output_folder, "data", "explorenz_ec.pickle")
+explorenz_nomenclature_pickle = os.path.join(output_folder, "data", "explorenz_nomenclature.pickle")
 explorenz_file_delete = [explorenz_data_compressed, explorenz_data_uncompressed]
 print(f"Start of explorenz download {utils.current_time()}")
 download.http(url=explorenz_url, local_file=explorenz_data_compressed)
 parse.gunzip_file(input_file=explorenz_data_compressed, output_file=explorenz_data_uncompressed)
 print(f"Start of explorenz parsing {utils.current_time()}")
-parse.explorenz(input_file=explorenz_data_uncompressed, output_file=explorenz_pickle)
+parse.explorenz_ec(input_file=explorenz_data_uncompressed, output_file=explorenz_ec_pickle)
+parse.explorenz_nomenclature(input_file=explorenz_data_uncompressed, output_file=explorenz_nomenclature_pickle)
 
 for file in explorenz_file_delete:
     if os.path.isfile(file):
         os.remove(file)
 
 print(f"Start of explorenz populating db {utils.current_time()}")
-populate.explorenz(explorenz_pickle, database)
+populate.explorenz(explorenz_ec_pickle, database)
 print(f"End of explorenz {utils.current_time}")
 
 # Sprot

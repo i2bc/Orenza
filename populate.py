@@ -47,10 +47,8 @@ def uniprot(filename, database, table_type):
             tuple_list_ec = uniprot_data[key][
                 "ec_numbers"
             ]  # data structure : [(ec_number1, ec_complete), (ec_number2, ec_complete)...]
-            #            print(tuple_list_ec)
             for tup in tuple_list_ec:
-                query_joint_table = f"INSERT INTO {joint_table} (id, sprot_id, ec_id) VALUES(Null, ?, ?)"
-                #                print(accession, tup[0])
+                query_joint_table = f"INSERT INTO {joint_table} (id, {table_type}_id, ec_id) VALUES(Null, ?, ?)"
                 cur.execute(query_joint_table, (accession, tup[0]))
                 query_pk_exist = f"SELECT EXISTS (SELECT 1 FROM {ec_table} WHERE number =?)"
                 cur.execute(query_pk_exist, (tup[0],))
@@ -62,7 +60,7 @@ def uniprot(filename, database, table_type):
     print(f"Finished updating {table_type} database at: {utils.current_time()}")
 
 
-def explorenz(filename, database):
+def explorenz_ec(filename: str, database: str):
     """
     Initialize the enzyme table with the info from the parsing
 
@@ -70,7 +68,7 @@ def explorenz(filename, database):
         filename: path and name of the parsing file (pickle format)
         database: path and name of the database to be updated
     """
-    print(f"Start updating explorenz database at {utils.current_time()}")
+    print(f"Start updating explorenz_ec database at {utils.current_time()}")
     table = "orenza_enzyme"
     con = utils.create_connection(database)
     if not con:
@@ -93,18 +91,84 @@ def explorenz(filename, database):
             orphan = True
             sprot_count = 0
             trembl_count = 0
+            created = enzyme_data[key]["created"]
+            first_number = enzyme_data[key]["class"]
+            second_number = enzyme_data[key]["subclass"]
+            third_number = enzyme_data[key]["subsubclass"]
             query = f"""
-                        INSERT INTO {table} (ec_number, reaction, comments, orphan, sprot_count)
-                        VALUES (?, ?, ?, ?, ?, ?)
+                        INSERT INTO {table} (ec_number, reaction, comments, orphan, sprot_count, trembl_count, created, first_number, second_number, third_number)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """
-            cur.execute(query, (ec_number, reaction, comments, orphan, sprot_count, trembl_count))
+            cur.execute(
+                query,
+                (
+                    ec_number,
+                    reaction,
+                    comments,
+                    orphan,
+                    sprot_count,
+                    trembl_count,
+                    created,
+                    first_number,
+                    second_number,
+                    third_number,
+                ),
+            )
 
         con.commit()
         con.close()
     else:
         print("Enzyme pickle couldn't be read")
-    print(f"Finished updating explorenz database at {utils.current_time()}")
+    print(f"Finished updating explorenz ec database at {utils.current_time()}")
 
 
+def explorenz_nomenclature(filename: str, database: str):
+
+    print(f"Start updating explorenz_nomenclature database at {utils.current_time()}")
+    table = "orenza_nomenclature"
+    con = utils.create_connection(database)
+
+    if not con:
+        print("Couldn't load the database properly see previous error messages")
+        sys.exit()
+    cur = con.cursor()
+    if cur.execute(f"SELECT EXISTS (SELECT 1 FROM {table})"):
+        cur.execute(f"DELETE FROM {table}")
+        con.commit()
+
+    print(f"Start loading data at {utils.current_time()}")
+    nomenclature_data = parse.load_pickle(filename)
+
+    print(f"Start creating database at {utils.current_time()}")
+    if nomenclature_data:
+        for key in nomenclature_data:
+            ec_number = key
+            heading = nomenclature_data[key]["heading"]
+            first_number = nomenclature_data[key]["first_number"]
+            second_number = nomenclature_data[key]["second_number"]
+            third_number = nomenclature_data[key]["third_number"]
+            query = f"""
+                        INSERT INTO {table} (ec_number, heading, first_number, second_number, third_number)
+                        VALUES (?, ?, ?, ?, ?)
+                        """
+            cur.execute(
+                query,
+                (
+                    ec_number,
+                    heading,
+                    first_number,
+                    second_number,
+                    third_number,
+                ),
+            )
+
+        con.commit()
+        con.close()
+    else:
+        print("Enzyme pickle couldn't be read")
+    print(f"Finished updating explorenz nomenclature database at {utils.current_time()}")
+
+
+explorenz_nomenclature("./data/explorenz_nomenclature.pickle", "../../db_orenza.sqlite3")
 # update_explorenz("../data/pickle/explorenz.pickle", "./test.sqlite3")
 # update_sprot("../data/pickle/swiss.pickle", "./test.sqlite3")
