@@ -142,9 +142,6 @@ def read_uniprot(input_file: str):
         contain_ec = False
         while line:
             current += line
-            # i += 1
-            if i > 100000:
-                break
             if line.startswith("DE"):
                 if "EC=" in line:
                     contain_ec = True
@@ -374,10 +371,48 @@ def explorenz_nomenclature(input_file: str, output_file: str):
 #                print(ec_num.text, " : ", data[ec_num.text]["created"])
 
 
+def brenda(input_file: str, output_file: str):
+    """
+    This function parse the .txt from brenda and extract the ec number
+    and the associated species.
+
+    Args:
+        input_file : The path to the file to be parsed
+        output_file : Name and path of the output file
+    """
+    with open(input_file, "r") as f:
+        lines = f.readlines()
+        data = {}
+        new_query = True
+        ec_number = ""
+        species = []
+        for line in lines:
+            if line.startswith("ID"):
+                pattern = "ID\t([0-9.]+)"
+                match = re.search(pattern, line)
+                if match:
+                    ec_number = match.group(1)
+                    new_query = False
+                    data[ec_number] = {}
+            if line.startswith("PR") and not new_query:
+                pattern = r"PR\t#[0-9]+# ([A-Z][a-z ]+)"
+                match = re.search(pattern, line)
+                if match:
+                    stripped_match = match.group(1).strip()
+                    species.append(stripped_match)
+
+            if line.startswith(r"///") and not new_query:
+                data[ec_number]["species"] = species.copy()
+                ec_number = ""
+                species.clear()
+                new_query = True
+        save_pickle(data, output_file)
+
+
 """
 ----------------Test---------------
 """
-
+# brenda("./data/brenda_2023_1.txt")
 # explorenz_ec("./data/enzyme-data.xml", "./data/explorenz_ec.pickle")
 
 
