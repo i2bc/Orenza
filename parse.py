@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 
-import pickle
 import gzip
+import pickle
 import xml.etree.ElementTree as ET
 import re
+import os
 from io import StringIO
 from html.parser import HTMLParser
+import utils
 
 
 # from https://stackoverflow.com/questions/753052/strip-html-from-strings-in-python
@@ -50,38 +52,6 @@ def gunzip_file(input_file: str, output_file: str, block_size=65536):
         print(f"Error occurred while trying to unzip: {input_file}, error: {e}")
 
 
-def save_pickle(data: dict, output_file: str):
-    """
-    This function stores a dictionary of parsed data as a pickle file.
-    Args:
-        data : a dictionary containing the data
-        output_file : name and path of the output file
-        path : the path where you want the file to be stored
-    """
-    try:
-        with open(output_file, "wb") as f:
-            pickle.dump(data, f)
-    except Exception as e:
-        print(f"Error occurred while saving pickle file: {e}")
-
-
-def load_pickle(input_file: str):
-    """
-    This function loads a pickle file.
-    Args:
-        input_file: Name and path of the pickle file.
-    Returns:
-        The data loaded from the pickle file.
-    """
-    try:
-        with open(input_file, "rb") as f:
-            data = pickle.load(f)
-        return data
-    except Exception as e:
-        print(f"Error occurred while loading pickle file: {e}")
-        return None
-
-
 # def uniprot(input_file: str, output_file: str):
 #    """
 #    This function parse the data of dat file from uniprot
@@ -121,7 +91,7 @@ def load_pickle(input_file: str):
 #                            ec_complete = True
 #                            listEc.append((ec, ec_complete))
 #                    data[accession]["ec_numbers"] = listEc
-#        # save_pickle(data, output_file)
+#        # utils.save_pickle(data, output_file)
 #        print(len(data))
 
 
@@ -196,7 +166,7 @@ def uniprot(input_file: str, output_file: str):
 
         data[accession]["ec_numbers"] = list_ec_complete
 
-    save_pickle(data=data, output_file=output_file)
+    utils.save_pickle(data=data, output_file=output_file)
 
 
 """
@@ -287,7 +257,7 @@ def explorenz_ec(input_file: str, output_file: str):
             if data[ec_num.text]:
                 data[ec_num.text]["created"] = created
 
-    save_pickle(data, output_file)
+    utils.save_pickle(data, output_file)
 
 
 """
@@ -341,7 +311,7 @@ def explorenz_nomenclature(input_file: str, output_file: str):
                 "third_number": third.text,
                 "heading": heading,
             }
-    save_pickle(data, output_file)
+    utils.save_pickle(data, output_file)
 
 
 # def explore_hist(input_file: str):
@@ -395,18 +365,57 @@ def brenda(input_file: str, output_file: str):
                     new_query = False
                     data[ec_number] = {}
             if line.startswith("PR") and not new_query:
-                pattern = r"PR\t#[0-9]+# ([A-Z][a-z ]+)"
+                pattern = r"PR\t#[0-9]+# (\d+\.\d+\.\d+\.\d+)"
                 match = re.search(pattern, line)
                 if match:
                     stripped_match = match.group(1).strip()
-                    species.append(stripped_match)
+                    if stripped_match not in species:
+                        species.append(stripped_match)
 
             if line.startswith(r"///") and not new_query:
                 data[ec_number]["species"] = species.copy()
                 ec_number = ""
                 species.clear()
                 new_query = True
-        save_pickle(data, output_file)
+        utils.save_pickle(data, output_file)
+
+
+def pdb(input_file: str):
+    with gzip.open(input_file, "rb") as f:
+        lines = f.readlines()
+        data = {}
+        ec_number = ""
+        uniprot_id = ""  # what is it ?
+        pdb_id = ""
+        ec_found = False
+        for line in lines:
+            pattern_pdb_id = r"^<PDBx:datablock\s+datablockName=\"(\w+)\""
+            match = re.search(pattern_pdb_id, line.decode())
+            if match:
+                pdb_id = match.group(1)
+
+            pattern_ec_number = r"<PDBx:pdbx_ec>(\d+\.\d+\.\d+\.\d+)"
+            match = re.search(pattern_ec_number, line.decode())
+            if match and not ec_found:
+                ec_number = match.group(1)
+                ec_found = True
+
+            pattern_sp_id = r"<PDBx:pdbx_db_accession>(\w+)<\/PDBx:pdbx_db_accession>"
+            match = re.search(pattern_sp_id, line.decode())
+            if match:
+                uniprot_id = match.group(1)
+
+        data[ec_number] = {}
+        data[ec_number]["uniprot_id"] = uniprot_id
+        data[ec_number]["pdb_id"] = pdb_id
+
+
+def pdb_iterate(root_dir: str):
+    for root, dirs, files in os.walk(root_dir):
+        for file in files:
+            full_path = os.path.join(root, file)
+            print(full_path)
+            pdb(full_path)
 
 
 """
@@ -414,6 +423,9 @@ def brenda(input_file: str, output_file: str):
 """
 # brenda("./data/brenda_2023_1.txt")
 # explorenz_ec("./data/enzyme-data.xml", "./data/explorenz_ec.pickle")
+
+# pdb("./data/pdb/as/1as0.xml.gz")
+pdb_iterate("./data/pdb")
 
 
 def type_swiss(dataPickle):

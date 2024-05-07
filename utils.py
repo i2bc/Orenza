@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import pickle
 import sqlite3
 from datetime import datetime
 
@@ -29,3 +30,35 @@ def create_connection(database: str):
         print("Error connecting to database: ", e)
 
     return con
+
+
+def save_pickle(data: dict, output_file: str):
+    """
+    This function stores a dictionary of parsed data as a pickle file.
+    Args:
+        data : a dictionary containing the data
+        output_file : name and path of the output file
+        path : the path where you want the file to be stored
+    """
+    try:
+        with open(output_file, "wb") as f:
+            pickle.dump(data, f)
+    except Exception as e:
+        print(f"Error occurred while saving pickle file: {e}")
+
+
+def load_pickle(input_file: str):
+    """
+    This function loads a pickle file.
+    Args:
+        input_file: Name and path of the pickle file.
+    Returns:
+        The data loaded from the pickle file.
+    """
+    try:
+        with open(input_file, "rb") as f:
+            data = pickle.load(f)
+        return data
+    except Exception as e:
+        print(f"Error occurred while loading pickle file: {e}")
+        return None
