@@ -1,7 +1,10 @@
+#!/usr/bin/env python3
+
 import requests
 import os
 import concurrent.futures
 from bs4 import BeautifulSoup
+import utils
 
 
 url = "https://files.rcsb.org/pub/pdb/data/structures/divided/XML/"
@@ -60,6 +63,8 @@ def download_subfolder(base_url: str, output_path: str, folder: str):
 
 # for folder in folders:
 #    download_subfolder(url, download_output, folder)
+print(f"start the download of pdb at {utils.current_time()}")
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=500)
 futures = [executor.submit(download_subfolder, url, download_output, folder) for folder in folders]
 concurrent.futures.wait(futures)
+print(f"end the download of pdb at {utils.current_time()}")

@@ -2,33 +2,63 @@ import requests
 import re
 from bs4 import BeautifulSoup
 import utils
+from urllib.parse import urlparse
 
-r = requests.get("https://www.genome.jp/kegg/pathway.html")
-html_data = r.content
 
-parsed_data = BeautifulSoup(html_data, "html.parser")
+def strip_url_path(url):
+    # Check if the URL ends with a '/'
+    if url.endswith("/"):
+        # Remove the trailing '/'
+        url = url[:-1]
+
+    # Find the last occurrence of '/'
+    last_slash_index = url.rfind("/")
+
+    # Strip the path after the last '/'
+    stripped_url = url[:last_slash_index]
+
+    return stripped_url
 
 
 def kegg(url: str, output_file: str):
+
+    r = requests.get(url)
+    html_data = r.content
+    parsed_data = BeautifulSoup(html_data, "html.parser")
     links = parsed_data.find_all("a", href=True)
     data = {}
+    parsed_url = urlparse(url)
+
+    base_url = parsed_url.scheme + "://" + parsed_url.netloc
+    print(base_url)
     for link in links:
         if link["href"].startswith("/pathway/"):
-            base_url = url
             r_path = requests.get(base_url + link["href"])
             html_pathway = r_path.content
             parsed_pathway = BeautifulSoup(html_pathway, "html.parser")
             rects = parsed_pathway.find_all(shape="rect")
             pathway = link["href"].split("/")[2]
             data[pathway] = []
+            print(f"Pathway: {pathway}")
             for rect in rects:
                 pattern = r"\d+\.\d+\.\d+\.\d+"
                 if rect.get("title"):
                     match = re.search(pattern, rect["title"])
                     if match:
                         ec_number = match.group()
-                        data[pathway].append(ec_number)
-
-        for key in data:
-            print(data[key])
+                        if ec_number not in data[pathway]:
+                            data[pathway].append(ec_number)
+    for key in list(data.keys()):
+        # Check if the value corresponding to the key is an empty list
+        if isinstance(data[key], list) and not data[key]:
+            # Remove the key-value pair from the data
+            print(key)
+            del data[key]
     utils.save_pickle(data=data, output_file=output_file)
+
+
+url = "https://www.genome.jp/kegg/pathway.html"
+output_file = "./data/kegg.pickle"
+print(f"start the scraping of kegg at {utils.current_time()}")
+kegg(url, output_file)
+print(f"end of the scraping of kegg at {utils.current_time()}")

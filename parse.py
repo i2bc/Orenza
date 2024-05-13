@@ -365,11 +365,11 @@ def brenda(input_file: str, output_file: str):
                     new_query = False
                     data[ec_number] = {}
             if line.startswith("PR") and not new_query:
-                pattern = r"PR\t#[0-9]+# (\d+\.\d+\.\d+\.\d+)"
+                pattern = r"PR\t#[0-9]+# (\w* \w*)"
                 match = re.search(pattern, line)
                 if match:
                     stripped_match = match.group(1).strip()
-                    if stripped_match not in species:
+                    if stripped_match not in species and stripped_match != "no activity":
                         species.append(stripped_match)
 
             if line.startswith(r"///") and not new_query:
@@ -380,7 +380,7 @@ def brenda(input_file: str, output_file: str):
         utils.save_pickle(data, output_file)
 
 
-def pdb(input_file: str):
+def pdb(input_file: str, data: dict):
     with gzip.open(input_file, "rb") as f:
         lines = f.readlines()
         data = {}
@@ -405,27 +405,32 @@ def pdb(input_file: str):
             if match:
                 uniprot_id = match.group(1)
 
-        data[ec_number] = {}
-        data[ec_number]["uniprot_id"] = uniprot_id
-        data[ec_number]["pdb_id"] = pdb_id
+        if data.get(data[ec_number]):
+            data[ec_number].append(pdb_id, uniprot_id)
+        else:
+            data[ec_number]
+            data[ec_number] = []
+            data[ec_number].append(pdb_id, uniprot_id)
 
 
-def pdb_iterate(root_dir: str):
+def pdb_iterate(root_dir: str, output_file: str):
+    data = {}
     for root, dirs, files in os.walk(root_dir):
         for file in files:
             full_path = os.path.join(root, file)
             print(full_path)
-            pdb(full_path)
+            pdb(full_path, data)
+    utils.save_pickle(data, output_file)
 
 
 """
 ----------------Test---------------
 """
-# brenda("./data/brenda_2023_1.txt")
+brenda("./data/brenda_2023_1.txt", "./data/brenda.pickle")
 # explorenz_ec("./data/enzyme-data.xml", "./data/explorenz_ec.pickle")
 
 # pdb("./data/pdb/as/1as0.xml.gz")
-pdb_iterate("./data/pdb")
+# pdb_iterate("./data/pdb")
 
 
 def type_swiss(dataPickle):
