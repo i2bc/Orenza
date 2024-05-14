@@ -405,12 +405,13 @@ def pdb(input_file: str, data: dict):
             if match:
                 uniprot_id = match.group(1)
 
-        if data.get(data[ec_number]):
-            data[ec_number].append(pdb_id, uniprot_id)
-        else:
-            data[ec_number]
-            data[ec_number] = []
-            data[ec_number].append(pdb_id, uniprot_id)
+        if ec_number:
+            if data.get(ec_number):
+                data[ec_number].append(pdb_id, uniprot_id)
+            else:
+                data[ec_number] = []
+                tup_id = (pdb_id, uniprot_id)
+                data[ec_number].append(tup_id)
 
 
 def pdb_iterate(root_dir: str, output_file: str):
@@ -426,7 +427,8 @@ def pdb_iterate(root_dir: str, output_file: str):
 """
 ----------------Test---------------
 """
-brenda("./data/brenda_2023_1.txt", "./data/brenda.pickle")
+pdb_iterate("./data/pdb/", "./data/pdb.pickle")
+# brenda("./data/brenda_2023_1.txt", "./data/brenda.pickle")
 # explorenz_ec("./data/enzyme-data.xml", "./data/explorenz_ec.pickle")
 
 # pdb("./data/pdb/as/1as0.xml.gz")

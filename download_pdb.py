@@ -61,10 +61,16 @@ def download_subfolder(base_url: str, output_path: str, folder: str):
                 download_file(full_url, full_name)
 
 
-# for folder in folders:
-#    download_subfolder(url, download_output, folder)
+i = 0
 print(f"start the download of pdb at {utils.current_time()}")
-executor = concurrent.futures.ThreadPoolExecutor(max_workers=500)
-futures = [executor.submit(download_subfolder, url, download_output, folder) for folder in folders]
-concurrent.futures.wait(futures)
+for folder in folders:
+    download_subfolder(url, download_output, folder)
+    i += 1
+    if i >= 1000:
+        break
 print(f"end the download of pdb at {utils.current_time()}")
+# print(f"start the download of pdb at {utils.current_time()}")
+# executor = concurrent.futures.ThreadPoolExecutor(max_workers=500)
+# futures = [executor.submit(download_subfolder, url, download_output, folder) for folder in folders]
+# concurrent.futures.wait(futures)
+# print(f"end the download of pdb at {utils.current_time()}")
