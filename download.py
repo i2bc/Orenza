@@ -1,6 +1,9 @@
 from ftplib import FTP
 import sys
+import bs4
 import requests
+import os
+from bs4 import BeautifulSoup
 
 
 def http(url, local_file):
@@ -29,7 +32,7 @@ def http(url, local_file):
         return False
 
 
-def ftp(ftp_host, remote_file, local_file, ftp_user="anonymous", ftp_passwd="anonymous@"):
+def ftp(ftp_host: str, remote_file: str, local_file: str, ftp_user="anonymous", ftp_passwd="anonymous@"):
     """
     Download a file from the specified URL using the ftp protocol
 
@@ -57,6 +60,73 @@ def ftp(ftp_host, remote_file, local_file, ftp_user="anonymous", ftp_passwd="ano
     except Exception as e:
         print(f"Error: {e}")
         sys.exit(1)
+
+
+# PDB
+
+
+def https(url: str, filename: str):
+    """
+    Download file from an url using https
+    Args:
+        url: link to the https to download_file
+        filename: name of the downloaded file
+    """
+    response = requests.get(url)
+    if response.status_code == 200:
+        with open(filename, "wb") as f:
+            f.write(response.content)
+    else:
+        basename = os.path.basename(filename)
+        print(f"Failed to download_file {basename}")
+
+
+def pdb_get_subfolder(url: str):
+    """
+    Get a list of the links (url) on the page
+    Args:
+        url: link to the page
+
+    """
+    r = requests.get(url)
+    html_data = r.content
+
+    parsed_data = BeautifulSoup(html_data, "html.parser")
+
+    links = parsed_data.find_all("a", href=True)
+    folders = []
+    for link in links:
+        if link.get("href"):
+            if len(link["href"]) == 3:  # Ensure that the link is of the format letter/digit letter/digit
+                if link["href"] not in folders:
+                    folders.append(link["href"])
+    return folders
+
+
+def pdb_download_subfolder(base_url: str, output_path: str, folder: str):
+    """
+    download all the content contained in the specified subfolder
+    Args:
+        base_url: the page containing the subfolder
+        output_path: path where the folders will be download
+        folder: name of the folder to download
+    """
+    subfolder_url = os.path.join(base_url, folder)
+    subfolder_name = folder[:-1]
+    full_subfolder_name = os.path.join(output_path, subfolder_name)
+    if not os.path.exists(full_subfolder_name):
+        os.makedirs(full_subfolder_name)
+
+    r = requests.get(subfolder_url)
+    html_data = r.content
+    parsed_data = BeautifulSoup(html_data, "html.parser")
+    links = parsed_data.find_all("a", href=true)
+    for link in links:
+        if link.get("href"):
+            if link["href"].endswith("xml.gz"):
+                full_url = os.path.join(subfolder_url, link["href"])
+                full_name = os.path.join(full_subfolder_name, link["href"])
+                https(full_url, full_name)
 
 
 # if __name__ == "__main__":

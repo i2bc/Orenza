@@ -5,22 +5,14 @@ import utils
 from urllib.parse import urlparse
 
 
-def strip_url_path(url):
-    # Check if the URL ends with a '/'
-    if url.endswith("/"):
-        # Remove the trailing '/'
-        url = url[:-1]
-
-    # Find the last occurrence of '/'
-    last_slash_index = url.rfind("/")
-
-    # Strip the path after the last '/'
-    stripped_url = url[:last_slash_index]
-
-    return stripped_url
-
-
 def kegg(url: str, output_file: str):
+    """
+    Scrape the kegg pages containing the pathway and go through each pages to get all the ec ec_number
+    contained in the rectangle (html shape)
+    Args:
+        url: main page contained the pathway
+        output_file: name and location of the result
+    """
 
     r = requests.get(url)
     html_data = r.content
@@ -57,8 +49,8 @@ def kegg(url: str, output_file: str):
     utils.save_pickle(data=data, output_file=output_file)
 
 
-url = "https://www.genome.jp/kegg/pathway.html"
-output_file = "./data/kegg.pickle"
-print(f"start the scraping of kegg at {utils.current_time()}")
-kegg(url, output_file)
-print(f"end of the scraping of kegg at {utils.current_time()}")
+# url = "https://www.genome.jp/kegg/pathway.html"
+# output_file = "./data/kegg.pickle"
+# print(f"start the scraping of kegg at {utils.current_time()}")
+# kegg(url, output_file)
+# print(f"end of the scraping of kegg at {utils.current_time()}")

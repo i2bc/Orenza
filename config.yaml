@@ -14,3 +14,13 @@ trembl:
   ftp: ftp.expasy.org
   remote_file: /databases/uniprot/current_release/knowledgebase/complete/uniprot_trembl.dat.gz
   output_file: trembl.dat.gz
+
+kegg:
+  url: https://www.genome.jp/kegg/pathway.html
+
+brenda:
+  compressed_file: brenda_2023_1.txt.tar.gz
+
+pdb:
+  url: https://files.rcsb.org/pub/pdb/data/structures/divided/xml/
+  worker: 5000

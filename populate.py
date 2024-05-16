@@ -91,13 +91,15 @@ def explorenz_ec(filename: str, database: str):
             orphan = True
             sprot_count = 0
             trembl_count = 0
+            species_count = 0
             created = enzyme_data[key]["created"]
             first_number = enzyme_data[key]["class"]
             second_number = enzyme_data[key]["subclass"]
             third_number = enzyme_data[key]["subsubclass"]
             query = f"""
-                        INSERT INTO {table} (ec_number, reaction, comments, orphan, sprot_count, trembl_count, created, first_number, second_number, third_number)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        INSERT INTO {table} (ec_number, reaction, comments, orphan, sprot_count, 
+                                             trembl_count, species_count, created, first_number, second_number, third_number)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """
             cur.execute(
                 query,
@@ -108,6 +110,7 @@ def explorenz_ec(filename: str, database: str):
                     orphan,
                     sprot_count,
                     trembl_count,
+                    species_count,
                     created,
                     first_number,
                     second_number,
@@ -123,7 +126,12 @@ def explorenz_ec(filename: str, database: str):
 
 
 def explorenz_nomenclature(filename: str, database: str):
-
+    """
+    Populate nomenclature table with information from explorenz parsing
+    Args:
+        filename: path and name of the parsing file (pickle format)
+        database: path and name of the database to be updated
+    """
     print(f"Start updating explorenz_nomenclature database at {utils.current_time()}")
     table = "orenza_nomenclature"
     con = utils.create_connection(database)
@@ -170,6 +178,14 @@ def explorenz_nomenclature(filename: str, database: str):
 
 
 def brenda(filename: str, database: str):
+    """
+    Initialize the  species table with the info of the parsing
+    and the joint table between enzyme and this one
+
+    Args:
+        filename: the name and path of the data to be added to the database (pickle format)
+        database: the name and path of the database to be updated
+    """
     print(f"Start updating species(brenda) table at {utils.current_time()}")
     table = "orenza_species"
     joint_table = "orenza_species_enzymes"
@@ -230,7 +246,12 @@ def brenda(filename: str, database: str):
 
 
 def kegg(filename: str, database: str):
-
+    """
+    Initialize the  kegg table with the info of the scraping of kegg pathway page
+    Args:
+        filename: the name and path of the data to be added to the database (pickle format)
+        database: the name and path of the database to be updated
+    """
     print(f"Start updating kegg pathway table at {utils.current_time()}")
     table = "orenza_kegg"
     joint_table = "orenza_kegg_ec_numbers"
@@ -289,7 +310,12 @@ def kegg(filename: str, database: str):
 
 
 def pdb(filename: str, database: str):
-
+    """
+    Initialize the  pdb table with the info of the parsed files of the pdb
+    Args:
+        filename: the name and path of the data to be added to the database (pickle format)
+        database: the name and path of the database to be updated
+    """
     print(f"Start updating pdb table at {utils.current_time()}")
     table = "orenza_pdb"
     enzyme_table = "orenza_enzyme"
@@ -331,6 +357,7 @@ def pdb(filename: str, database: str):
     print(f"Finished updating pdb table at {utils.current_time()}")
 
 
+# pdb("./data/pdb.pickle", "../../db_orenza.sqlite3")
 # kegg("./data/kegg.pickle", "../../db_orenza.sqlite3")
 # brenda("./data/brenda.pickle", "../../db_orenza.sqlite3")
 # explorenz_nomenclature("./data/explorenz_nomenclature.pickle", "../../db_orenza.sqlite3")

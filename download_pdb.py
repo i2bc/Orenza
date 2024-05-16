@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 import utils
 
 
-url = "https://files.rcsb.org/pub/pdb/data/structures/divided/XML/"
+url = "https://files.rcsb.org/pub/pdb/data/structures/divided/xml/"
 
 
 def download_file(url, filename):
@@ -51,13 +51,12 @@ def download_subfolder(base_url: str, output_path: str, folder: str):
     r = requests.get(subfolder_url)
     html_data = r.content
     parsed_data = BeautifulSoup(html_data, "html.parser")
-    links = parsed_data.find_all("a", href=True)
+    links = parsed_data.find_all("a", href=true)
     for link in links:
         if link.get("href"):
             if link["href"].endswith("xml.gz"):
                 full_url = os.path.join(subfolder_url, link["href"])
                 full_name = os.path.join(full_subfolder_name, link["href"])
-                print(f"In folder {folder}, file: {link}")
                 download_file(full_url, full_name)
 
 
@@ -65,8 +64,9 @@ i = 0
 print(f"start the download of pdb at {utils.current_time()}")
 for folder in folders:
     download_subfolder(url, download_output, folder)
+    print(f"Count: {i}")
     i += 1
-    if i >= 1000:
+    if i >= 20:
         break
 print(f"end the download of pdb at {utils.current_time()}")
 # print(f"start the download of pdb at {utils.current_time()}")

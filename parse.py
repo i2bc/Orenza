@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import gzip
+import tarfile
 import pickle
 import xml.etree.ElementTree as ET
 import re
@@ -50,6 +51,11 @@ def gunzip_file(input_file: str, output_file: str, block_size=65536):
                         f_out.write(block)
     except Exception as e:
         print(f"Error occurred while trying to unzip: {input_file}, error: {e}")
+
+
+def extract_tar(input_file: str, output_file: str):
+    with tarfile.open(input_file, "r") as f:
+        f.extractall(output_file)
 
 
 # def uniprot(input_file: str, output_file: str):
@@ -383,7 +389,6 @@ def brenda(input_file: str, output_file: str):
 def pdb(input_file: str, data: dict):
     with gzip.open(input_file, "rb") as f:
         lines = f.readlines()
-        data = {}
         ec_number = ""
         uniprot_id = ""  # what is it ?
         pdb_id = ""
@@ -407,7 +412,8 @@ def pdb(input_file: str, data: dict):
 
         if ec_number:
             if data.get(ec_number):
-                data[ec_number].append(pdb_id, uniprot_id)
+                tup_id = (pdb_id, uniprot_id)
+                data[ec_number].append(tup_id)
             else:
                 data[ec_number] = []
                 tup_id = (pdb_id, uniprot_id)
@@ -419,15 +425,16 @@ def pdb_iterate(root_dir: str, output_file: str):
     for root, dirs, files in os.walk(root_dir):
         for file in files:
             full_path = os.path.join(root, file)
-            print(full_path)
             pdb(full_path, data)
+
+    print(data)
     utils.save_pickle(data, output_file)
 
 
 """
 ----------------Test---------------
 """
-pdb_iterate("./data/pdb/", "./data/pdb.pickle")
+# pdb_iterate("./data/pdb/", "./data/pdb.pickle")
 # brenda("./data/brenda_2023_1.txt", "./data/brenda.pickle")
 # explorenz_ec("./data/enzyme-data.xml", "./data/explorenz_ec.pickle")
 

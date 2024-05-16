@@ -6,7 +6,8 @@ import utils
 import parse
 import populate
 import link
-
+import scraping
+import concurrent.futures
 
 with open("./config.yaml", "r") as yaml_file:
     config = yaml.load(yaml_file, Loader=yaml.FullLoader)
@@ -33,7 +34,8 @@ for file in explorenz_file_delete:
         os.remove(file)
 
 print(f"Start of explorenz populating db {utils.current_time()}")
-populate.explorenz(explorenz_ec_pickle, database)
+populate.explorenz_ec(explorenz_ec_pickle, database)
+populate.explorenz_nomenclature(explorenz_nomenclature_pickle, database)
 print(f"End of explorenz {utils.current_time}")
 
 # Sprot
@@ -87,3 +89,57 @@ except ValueError as e:
 # Link database:
 link.swiss_explorenz(database=database, table_type="sprot")
 link.swiss_explorenz(database=database, table_type="trembl")
+
+# Kegg
+kegg_url = config["kegg"]["url"]
+kegg_pickle = os.path.join(output_folder, "data", "kegg.pickle")
+
+print(f"Start of kegg scraping {utils.current_time()}")
+scraping.kegg(kegg_url, kegg_pickle)
+print(f"Start of kegg populating {utils.current_time()}")
+populate.kegg(kegg_pickle, database)
+
+# Brenda
+brenda_data_compressed = config["brenda"]["compressed_file"]
+brenda_data_uncompressed = brenda_data_compressed.replace(".tar.gz", "")
+brenda_pickle = os.path.join(output_folder, "data", "brenda.pickle")
+brenda_file_delete = [brenda_data_uncompressed, brenda_data_compressed]
+
+print(f"Start of brenda extraction {utils.current_time()}")
+parse.extract_tar(brenda_data_compressed, brenda_data_uncompressed)
+print(f"Start of brenda parsing  {utils.current_time()}")
+parse.brenda(brenda_data_uncompressed, brenda_pickle)
+
+for file in brenda_file_delete:
+    if os.path.isfile(file):
+        os.remove(file)
+
+try:
+    print(f"Start of brenda populating at {utils.current_time()}")
+    populate.brenda(brenda_pickle, database)
+    print(f"End of brenda populating at {utils.current_time()}")
+except ValueError as e:
+    print(e)
+
+# PDB
+pdb_url = config["pdb"]["url"]
+pdb_subfolder_path = os.path.join(output_folder, "pdb")
+pdb_pickle = os.path.join(output_folder, "data", "pdb.pickle")
+pdb_worker = config["pdb"]["worker"]
+
+# TODO: delete file after testing size variability
+pdb_subfolders = download.pdb_get_subfolder(pdb_url)
+
+print(f"start the download of pdb at {utils.current_time()}")
+executor = concurrent.futures.ThreadPoolExecutor(max_workers=pdb_worker)
+futures = [
+    executor.submit(download.pdb_download_subfolder, pdb_url, pdb_subfolder_path, folder) for folder in pdb_subfolders
+]
+concurrent.futures.wait(futures)
+print(f"end the download of pdb at {utils.current_time()}")
+
+print(f"Start of pdb parsing at {utils.current_time()}")
+parse.pdb_iterate(pdb_subfolder_path, pdb_pickle)
+print(f"Start to populate pdb table at {utils.current_time()}")
+populate.pdb(pdb_pickle, database)
+print(f"End of pdb populating at {utils.current_time()}")
