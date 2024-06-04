@@ -44,13 +44,17 @@ def uniprot(filename, database, table_type):
 
             query_uniprot = f"INSERT INTO {uniprot_table} (accession) VALUES (?)"
             cur.execute(query_uniprot, (accession,))
-            tuple_list_ec = uniprot_data[key][
+            tuple_list_ec = uniprot_data[
+                key
+            ][
                 "ec_numbers"
             ]  # data structure : [(ec_number1, ec_complete), (ec_number2, ec_complete)...]
             for tup in tuple_list_ec:
                 query_joint_table = f"INSERT INTO {joint_table} (id, {table_type}_id, ec_id) VALUES(Null, ?, ?)"
                 cur.execute(query_joint_table, (accession, tup[0]))
-                query_pk_exist = f"SELECT EXISTS (SELECT 1 FROM {ec_table} WHERE number =?)"
+                query_pk_exist = (
+                    f"SELECT EXISTS (SELECT 1 FROM {ec_table} WHERE number =?)"
+                )
                 cur.execute(query_pk_exist, (tup[0],))
                 exists = cur.fetchone()[0]
                 if not exists:
@@ -91,15 +95,20 @@ def explorenz_ec(filename: str, database: str):
             orphan = True
             sprot_count = 0
             trembl_count = 0
+            pdb_count = 0
             species_count = 0
             created = enzyme_data[key]["created"]
             first_number = enzyme_data[key]["class"]
             second_number = enzyme_data[key]["subclass"]
             third_number = enzyme_data[key]["subsubclass"]
+            common_name = enzyme_data[key]["accepted_name"]
+            systematic_name = enzyme_data[key]["sys_name"]
+            other_name = enzyme_data[key]["other_names"]
+
             query = f"""
                         INSERT INTO {table} (ec_number, reaction, comments, orphan, sprot_count, 
-                                             trembl_count, species_count, created, first_number, second_number, third_number)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                             trembl_count, pdb_count, species_count, created, first_number, second_number, third_number, common_name, systematic_name, other_name)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """
             cur.execute(
                 query,
@@ -110,11 +119,15 @@ def explorenz_ec(filename: str, database: str):
                     orphan,
                     sprot_count,
                     trembl_count,
+                    pdb_count,
                     species_count,
                     created,
                     first_number,
                     second_number,
                     third_number,
+                    common_name,
+                    systematic_name,
+                    other_name,
                 ),
             )
 
@@ -212,12 +225,15 @@ def brenda(filename: str, database: str):
             ec_number = key
             species = brenda_data[key]["species"]
             for specie in species:
-                query_ec_exist = f"SELECT EXISTS (SELECT 1 FROM {enzyme_table} WHERE ec_number =?)"
+                query_ec_exist = (
+                    f"SELECT EXISTS (SELECT 1 FROM {enzyme_table} WHERE ec_number =?)"
+                )
                 cur.execute(query_ec_exist, (ec_number,))
                 ec_exists = cur.fetchone()[0]
                 if ec_exists:
-
-                    query_name_exist = f"SELECT EXISTS (SELECT 1 FROM {table} WHERE name=?)"
+                    query_name_exist = (
+                        f"SELECT EXISTS (SELECT 1 FROM {table} WHERE name=?)"
+                    )
                     cur.execute(query_name_exist, (specie,))
                     name_exists = cur.fetchone()[0]
                     if not name_exists:
@@ -254,7 +270,7 @@ def kegg(filename: str, database: str):
     """
     print(f"Start updating kegg pathway table at {utils.current_time()}")
     table = "orenza_kegg"
-    joint_table = "orenza_kegg_ec_numbers"
+    joint_table = "orenza_kegg_enzymes"
     enzyme_table = "orenza_enzyme"
     con = utils.create_connection(database)
 
@@ -273,32 +289,33 @@ def kegg(filename: str, database: str):
     print(f"Start creating database at {utils.current_time()}")
     if kegg_data:
         invalid_ec = []
-        for key in kegg_data:
-            pathway = key
-            ec_numbers = kegg_data[key]
-            query_pathway_exist = f"SELECT EXISTS (SELECT 1 FROM {table} WHERE pathway=?)"
-            cur.execute(query_pathway_exist, (pathway,))
-            pathway_exists = cur.fetchone()[0]
-            if not pathway_exists:
-                query_insert = f"""
-                        INSERT INTO {table} (pathway)
-                        VALUES (?)
-                        """
-                cur.execute(
-                    query_insert,
-                    (pathway,),
+        for pathway_class in kegg_data:
+            for pathway in kegg_data[pathway_class]:
+                ec_numbers = kegg_data[pathway_class][pathway]
+                query_pathway_exist = (
+                    f"SELECT EXISTS (SELECT 1 FROM {table} WHERE pathway=?)"
                 )
-            for ec in ec_numbers:
-                query_ec_exist = f"SELECT EXISTS (SELECT 1 FROM {enzyme_table} WHERE ec_number =?)"
-                cur.execute(query_ec_exist, (ec,))
-                ec_exists = cur.fetchone()[0]
-                if ec_exists:
-                    print(f"kegg: {pathway}, ec: {ec}")
-                    query_joint_table = f"""INSERT INTO {joint_table} (kegg_id, ec_id) VALUES (?, ?)"""
-                    cur.execute(query_joint_table, (pathway, ec))
+                cur.execute(query_pathway_exist, (pathway,))
+                pathway_exists = cur.fetchone()[0]
+                if not pathway_exists:
+                    query_insert = f"""
+                            INSERT INTO {table} (pathway, pathway_class)
+                            VALUES (?, ?)
+                            """
+                    cur.execute(
+                        query_insert,
+                        (pathway, pathway_class),
+                    )
+                for ec in ec_numbers:
+                    query_ec_exist = f"SELECT EXISTS (SELECT 1 FROM {enzyme_table} WHERE ec_number =?)"
+                    cur.execute(query_ec_exist, (ec,))
+                    ec_exists = cur.fetchone()[0]
+                    if ec_exists:
+                        query_joint_table = f"""INSERT INTO {joint_table} (kegg_id, enzyme_id) VALUES (?, ?)"""
+                        cur.execute(query_joint_table, (pathway, ec))
 
-                if not ec_exists:
-                    invalid_ec.append(ec)
+                    if not ec_exists:
+                        invalid_ec.append(ec)
 
         con.commit()
         con.close()
@@ -338,7 +355,9 @@ def pdb(filename: str, database: str):
         for key in pdb_data:
             ec_number = key
             id_tuple = pdb_data[key]
-            query_ec_exist = f"SELECT EXISTS (SELECT 1 FROM {enzyme_table} WHERE ec_number=?)"
+            query_ec_exist = (
+                f"SELECT EXISTS (SELECT 1 FROM {enzyme_table} WHERE ec_number=?)"
+            )
             cur.execute(query_ec_exist, (ec_number,))
             ec_exists = cur.fetchone()[0]
             if not ec_exists:
@@ -355,11 +374,3 @@ def pdb(filename: str, database: str):
         print("PDB pickle couldn't be read")
 
     print(f"Finished updating pdb table at {utils.current_time()}")
-
-
-# pdb("./data/pdb.pickle", "../../db_orenza.sqlite3")
-# kegg("./data/kegg.pickle", "../../db_orenza.sqlite3")
-# brenda("./data/brenda.pickle", "../../db_orenza.sqlite3")
-# explorenz_nomenclature("./data/explorenz_nomenclature.pickle", "../../db_orenza.sqlite3")
-# update_explorenz("../data/pickle/explorenz.pickle", "./test.sqlite3")
-# update_sprot("../data/pickle/swiss.pickle", "./test.sqlite3")

@@ -13,44 +13,39 @@ def kegg(url: str, output_file: str):
         url: main page contained the pathway
         output_file: name and location of the result
     """
-
     r = requests.get(url)
     html_data = r.content
     parsed_data = BeautifulSoup(html_data, "html.parser")
-    links = parsed_data.find_all("a", href=True)
-    data = {}
     parsed_url = urlparse(url)
-
+    list_elements = parsed_data.find_all(class_="list")
+    data = {}
     base_url = parsed_url.scheme + "://" + parsed_url.netloc
-    print(base_url)
-    for link in links:
-        if link["href"].startswith("/pathway/"):
-            r_path = requests.get(base_url + link["href"])
-            html_pathway = r_path.content
-            parsed_pathway = BeautifulSoup(html_pathway, "html.parser")
-            rects = parsed_pathway.find_all(shape="rect")
-            pathway = link["href"].split("/")[2]
-            data[pathway] = []
-            print(f"Pathway: {pathway}")
-            for rect in rects:
-                pattern = r"\d+\.\d+\.\d+\.\d+"
-                if rect.get("title"):
-                    match = re.search(pattern, rect["title"])
-                    if match:
-                        ec_number = match.group()
-                        if ec_number not in data[pathway]:
-                            data[pathway].append(ec_number)
-    for key in list(data.keys()):
-        # Check if the value corresponding to the key is an empty list
-        if isinstance(data[key], list) and not data[key]:
-            # Remove the key-value pair from the data
-            print(key)
-            del data[key]
+    for list_element in list_elements:
+        # Find the previous sibling that is a div
+        pathway_class = list_element.find_previous_sibling("b")
+        pattern = r"^\d+\.\d+ (.+)"
+        match = re.match(pattern, pathway_class.text)
+        if match:
+            pathway_class_name = match.group(1)
+            print(pathway_class_name)
+        links = list_element.find_all("a", href=True)
+        for link in links:
+            if link["href"].startswith("/pathway/"):
+                r_path = requests.get(base_url + link["href"])
+                html_pathway = r_path.content
+                parsed_pathway = BeautifulSoup(html_pathway, "html.parser")
+                rects = parsed_pathway.find_all(shape="rect")
+                pathway = link["href"].split("/")[2]
+                for rect in rects:
+                    pattern = r"\d+\.\d+\.\d+\.\d+"
+                    if rect.get("title"):
+                        match = re.search(pattern, rect["title"])
+                        if match:
+                            ec_number = match.group()
+                            if pathway_class_name not in data:
+                                data[pathway_class_name] = {}
+                            if pathway not in data[pathway_class_name]:
+                                data[pathway_class_name][pathway] = []
+                            if ec_number not in data[pathway_class_name][pathway]:
+                                data[pathway_class_name][pathway].append(ec_number)
     utils.save_pickle(data=data, output_file=output_file)
-
-
-# url = "https://www.genome.jp/kegg/pathway.html"
-# output_file = "./data/kegg.pickle"
-# print(f"start the scraping of kegg at {utils.current_time()}")
-# kegg(url, output_file)
-# print(f"end of the scraping of kegg at {utils.current_time()}")

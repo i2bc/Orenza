@@ -1,8 +1,6 @@
 import utils
 import sys
 
-import parse
-
 
 def swiss_explorenz(database: str, table_type: str):
     """
@@ -45,10 +43,9 @@ def swiss_explorenz(database: str, table_type: str):
     con.close()
 
 
-# TODO: update later or delete it
-def update_explorenz(input_name: str, database: str):
+def species(database: str):
+    joint_table = "orenza_species_enzymes"
     enzyme_table = "orenza_enzyme"
-    enzyme_data = parse.load_pickle(input_name)
 
     con = utils.create_connection(database=database)
 
@@ -58,22 +55,51 @@ def update_explorenz(input_name: str, database: str):
 
     cur = con.cursor()
 
-    cur.execute(f"SELECT ec_number FROM {enzyme_table}")
+    cur.execute(f"SELECT DISTINCT enzyme_id FROM {joint_table}")
     ec_number = cur.fetchall()
-    for ec in enzyme_data:
-        created = enzyme_data[ec]["created"]
-        first_number = enzyme_data[ec]["class"]
-        second_number = enzyme_data[ec]["subclass"]
-        third_number = enzyme_data[ec]["subsubclass"]
-        # cur return tuple, so we get only the ec_number value
+    for ec in ec_number:
+        query_matching = f"SELECT ec_number FROM {enzyme_table} WHERE ec_number=?"
+        cur.execute(query_matching, ec)
+        matching = cur.fetchone()
 
-        query_update = (
-            f"UPDATE {enzyme_table} SET created=?, first_number=?, second_number=?, third_number=?  WHERE ec_number=?"
-        )
-        data_update = (created, first_number, second_number, third_number, ec)
-        cur.execute(query_update, data_update)
-        con.commit()
+        if matching:
+            query_count = f"SELECT COUNT(*) FROM {joint_table} where enzyme_id=?"
+            cur.execute(query_count, ec)
+            count = cur.fetchone()
+            query_update = (
+                f"UPDATE {enzyme_table} SET species_count=? WHERE ec_number=?"
+            )
+            data_update = (count[0], ec[0])
+            cur.execute(query_update, data_update)
+            con.commit()
     con.close()
 
 
-# update_explorenz("./data/explorenz_ec.pickle", "../../db_orenza.sqlite3")
+def pdb(database: str):
+    pdb_table = "orenza_pdb"
+    enzyme_table = "orenza_enzyme"
+
+    con = utils.create_connection(database=database)
+
+    if not con:
+        print("Couldn't load the database properly see previous error messages")
+        sys.exit()
+
+    cur = con.cursor()
+
+    cur.execute(f"SELECT ec_number_id FROM {pdb_table}")
+    ec_number = cur.fetchall()
+    for ec in ec_number:
+        query_matching = f"SELECT ec_number FROM {enzyme_table} WHERE ec_number=?"
+        cur.execute(query_matching, ec)
+        matching = cur.fetchone()
+
+        if matching:
+            query_count = f"SELECT COUNT(*) FROM {pdb_table} where ec_number_id=?"
+            cur.execute(query_count, ec)
+            count = cur.fetchone()
+            query_update = f"UPDATE {enzyme_table} SET pdb_count=? WHERE ec_number=?"
+            data_update = (count[0], ec[0])
+            cur.execute(query_update, data_update)
+            con.commit()
+    con.close()

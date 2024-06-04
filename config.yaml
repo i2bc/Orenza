@@ -1,4 +1,4 @@
-output: /home/demonz/programmation/stage/orenza/af2_web/bioi2server/orenza/script/
+output: /home/demonz/programmation/stage/orenza/af2_web/bioi2server/orenza/script/data/
 database: /home/demonz/programmation/stage/orenza/af2_web/bioi2server/orenza/script/db/db_orenza.sqlite3
 
 explorenz:
@@ -22,5 +22,5 @@ brenda:
   compressed_file: brenda_2023_1.txt.tar.gz
 
 pdb:
-  url: https://files.rcsb.org/pub/pdb/data/structures/divided/xml/
-  worker: 5000
+  url: https://files.rcsb.org/pub/pdb/data/structures/divided/XML/
+  worker: 500

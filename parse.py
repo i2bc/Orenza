@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from concurrent.futures import ProcessPoolExecutor, as_completed
 import gzip
 import tarfile
 import pickle
@@ -53,52 +54,9 @@ def gunzip_file(input_file: str, output_file: str, block_size=65536):
         print(f"Error occurred while trying to unzip: {input_file}, error: {e}")
 
 
-def extract_tar(input_file: str, output_file: str):
+def extract_tar(input_file: str, output_folder: str):
     with tarfile.open(input_file, "r") as f:
-        f.extractall(output_file)
-
-
-# def uniprot(input_file: str, output_file: str):
-#    """
-#    This function parse the data of dat file from uniprot
-#
-#    Args:
-#        input_file : Name and path of the file to be parsed
-#        output_file : Name and path of the output file
-#
-#    Returns:
-#        dict: A dictionary where each key is an accession and the corresponding value is a dictionary
-#            containing extracted EC numbers and a boolean indicating their completeness.
-#    """
-#    with open(input_file) as handle:
-#        data = {}
-#
-#        for record in SwissProt.parse(handle):
-#            if "EC=" in record.description:
-#                accession = record.accessions[0]
-#                data[accession] = {}
-#                ec_numbers = []
-#
-#                if isinstance(record.description, str):
-#                    ec_numbers = re.findall(r"EC=([\d.-]+)", record.description)
-#                    listEc = []
-#                    already_listed = False
-#                    for ec in ec_numbers:
-#                        for tup in listEc:  # Prevent adding multiple time the same ec number in the tuple
-#                            if ec in tup:
-#                                already_listed = True
-#                                continue
-#                        if already_listed:
-#                            continue
-#                        if "-" in ec:
-#                            ec_complete = False
-#                            listEc.append((ec, ec_complete))
-#                        else:
-#                            ec_complete = True
-#                            listEc.append((ec, ec_complete))
-#                    data[accession]["ec_numbers"] = listEc
-#        # utils.save_pickle(data, output_file)
-#        print(len(data))
+        f.extractall(output_folder)
 
 
 # based on this https://web.expasy.org/docs/userman.html from 27/03/2024
@@ -123,7 +81,6 @@ def read_uniprot(input_file: str):
                     contain_ec = True
 
             if line.startswith("//"):
-                # print("Query = ", current)
                 if contain_ec:
                     yield current
                 current = ""
@@ -156,7 +113,7 @@ def uniprot(input_file: str, output_file: str):
                         accession = match.group()
             if line.startswith("DE"):
                 if "EC=" in line:
-                    pattern = r"[\d.-]+"
+                    pattern = r"((\d+|-)\.){3}(\d+|-)"
                     match = re.search(pattern, line)
                     if match:
                         ec_list.append(match.group())
@@ -262,7 +219,11 @@ def explorenz_ec(input_file: str, output_file: str):
                 created = match.group(1)
             if data[ec_num.text]:
                 data[ec_num.text]["created"] = created
-
+            ec_action = row.find("field[@name='action']")
+            if (
+                ec_action.text == "deleted"
+            ):  # check history to the deleted action because the entry is still present even if deleted
+                data.pop(ec_num.text)
     utils.save_pickle(data, output_file)
 
 
@@ -291,7 +252,6 @@ def explorenz_nomenclature(input_file: str, output_file: str):
         input_file : The path to the file to be parsed
         output_file : Name and path of the output file
     """
-
     tree = ET.parse(input_file)
     root = tree.getroot()
     data = {}  # will contain the ecc and a subdictionary with his parameter
@@ -318,33 +278,6 @@ def explorenz_nomenclature(input_file: str, output_file: str):
                 "heading": heading,
             }
     utils.save_pickle(data, output_file)
-
-
-# def explore_hist(input_file: str):
-#    tree = ET.parse(input_file)
-#    root = tree.getroot()
-#    data = {}  # will contain the ecc and a subdictionary with his parameter
-#    for table_data in root.findall("database/table_data[@name='entry']"):
-#        for row in table_data.findall("row"):
-#            ec_num = row.find("field[@name='ec_num']")  # get the current_ec of the row
-#            if ec_num is not None:
-#                data[ec_num.text] = {}
-#                for field in row.findall("field"):
-#                    if field.attrib["name"] != "ec_num":
-#                        data[ec_num.text][field.attrib["name"]] = field.text
-#
-#    for table_data in root.findall("database/table_data[@name='hist']"):
-#        for row in table_data.findall("row"):
-#            ec_num = row.find("field[@name='ec_num']")  # get the current_ec of the row
-#            date_created = row.find("field[@name='history']")
-#
-#            pattern = "created ([0-9]*)"
-#            match = re.search(pattern=pattern, string=date_created.text)
-#            if match:
-#                created = match.group(1)
-#            if data[ec_num.text]:
-#                data[ec_num.text]["created"] = created
-#                print(ec_num.text, " : ", data[ec_num.text]["created"])
 
 
 def brenda(input_file: str, output_file: str):
@@ -386,88 +319,60 @@ def brenda(input_file: str, output_file: str):
         utils.save_pickle(data, output_file)
 
 
-def pdb(input_file: str, data: dict):
+def multiprocessing_pdb_iterate(root_dir: str, output_file: str):
+    data = {}
+    with ProcessPoolExecutor() as executor:
+        futures = []
+        for root, dirs, files in os.walk(root_dir):
+            for file in files:
+                full_path = os.path.join(root, file)
+                futures.append(executor.submit(pdb, full_path))
+
+        for future in as_completed(futures):
+            result = future.result()
+            for ec_number, values in result.items():
+                if ec_number in data:
+                    data[ec_number].extend(values)
+                else:
+                    data[ec_number] = values
+
+    utils.save_pickle(data, output_file)
+
+
+# Precompiling to improve efficiency over multiple files
+pattern_pdb_id = re.compile(r"^<PDBx:datablock\s+datablockName=\"(\w+)\"")
+pattern_ec_number = re.compile(r"<PDBx:pdbx_ec>(\d+\.\d+\.\d+\.\d+)")
+pattern_sp_id = re.compile(r"<PDBx:pdbx_db_accession>(\w+)<\/PDBx:pdbx_db_accession>")
+
+
+def pdb(input_file: str):
+    result = {}
     with gzip.open(input_file, "rb") as f:
         lines = f.readlines()
         ec_number = ""
-        uniprot_id = ""  # what is it ?
+        uniprot_id = ""
         pdb_id = ""
         ec_found = False
         for line in lines:
-            pattern_pdb_id = r"^<PDBx:datablock\s+datablockName=\"(\w+)\""
-            match = re.search(pattern_pdb_id, line.decode())
+            line_decoded = line.decode()
+            match = pattern_pdb_id.search(line_decoded)
             if match:
                 pdb_id = match.group(1)
 
-            pattern_ec_number = r"<PDBx:pdbx_ec>(\d+\.\d+\.\d+\.\d+)"
-            match = re.search(pattern_ec_number, line.decode())
+            match = pattern_ec_number.search(line_decoded)
             if match and not ec_found:
                 ec_number = match.group(1)
                 ec_found = True
 
-            pattern_sp_id = r"<PDBx:pdbx_db_accession>(\w+)<\/PDBx:pdbx_db_accession>"
-            match = re.search(pattern_sp_id, line.decode())
+            match = pattern_sp_id.search(line_decoded)
             if match:
                 uniprot_id = match.group(1)
 
         if ec_number:
-            if data.get(ec_number):
-                tup_id = (pdb_id, uniprot_id)
-                data[ec_number].append(tup_id)
-            else:
-                data[ec_number] = []
-                tup_id = (pdb_id, uniprot_id)
-                data[ec_number].append(tup_id)
-
-
-def pdb_iterate(root_dir: str, output_file: str):
-    data = {}
-    for root, dirs, files in os.walk(root_dir):
-        for file in files:
-            full_path = os.path.join(root, file)
-            pdb(full_path, data)
-
-    print(data)
-    utils.save_pickle(data, output_file)
+            result[ec_number] = [(pdb_id, uniprot_id)]
+    return result
 
 
 """
 ----------------Test---------------
 """
-# pdb_iterate("./data/pdb/", "./data/pdb.pickle")
-# brenda("./data/brenda_2023_1.txt", "./data/brenda.pickle")
-# explorenz_ec("./data/enzyme-data.xml", "./data/explorenz_ec.pickle")
-
-# pdb("./data/pdb/as/1as0.xml.gz")
-# pdb_iterate("./data/pdb")
-
-
-def type_swiss(dataPickle):
-    with open(dataPickle, "rb") as f:
-        i = 0
-        data = pickle.load(f)
-        for key in data:
-            print("data[key]: ", data[key])
-            print(type(data[key]["ec_numbers"]))
-            i += 1
-            if i > 1000:
-                break
-
-
-sprot_path = "/home/demonz/programmation/stage/orenza/af2_web/bioi2server/orenza/script/data/uniprot_sprot.dat"
-explorenz_path = "/home/demonz/programmation/stage/orenza/af2_web/bioi2server/orenza/script/data/enzyme-data.xml"
-# uniprotV2(sprot_path, "test")
-# process_query(sprot_path)
-# uniprot(sprot_path, "test")
-# parse_explorenz(explorenz_path)
-# load_pickle(explorenz_path)
-# type_swiss("../data/pickle/swiss.pickle")
-
-
-# analyse_swiss(file_output)
-
-# file_explore = "../data/enzyme-data.xml"
-# data_explore = parse_explorenz(file_explore)
-#
-# for key in data_explore["1.1.1.1"]:
-#    print("Cle : ", key, "\n", "Value: ", data_explore["1.1.1.1"][key])

@@ -1,11 +1,11 @@
 from ftplib import FTP
 import sys
-import bs4
 import requests
 import os
 from bs4 import BeautifulSoup
 
 
+# TODO: delete or https
 def http(url, local_file):
     """
     Downloads a file from the specified URL and saves it with the given filename (using http link).
@@ -32,7 +32,13 @@ def http(url, local_file):
         return False
 
 
-def ftp(ftp_host: str, remote_file: str, local_file: str, ftp_user="anonymous", ftp_passwd="anonymous@"):
+def ftp(
+    ftp_host: str,
+    remote_file: str,
+    local_file: str,
+    ftp_user="anonymous",
+    ftp_passwd="anonymous@",
+):
     """
     Download a file from the specified URL using the ftp protocol
 
@@ -97,7 +103,9 @@ def pdb_get_subfolder(url: str):
     folders = []
     for link in links:
         if link.get("href"):
-            if len(link["href"]) == 3:  # Ensure that the link is of the format letter/digit letter/digit
+            if (
+                len(link["href"]) == 3
+            ):  # Ensure that the link is of the format letter/digit letter/digit
                 if link["href"] not in folders:
                     folders.append(link["href"])
     return folders
@@ -120,35 +128,11 @@ def pdb_download_subfolder(base_url: str, output_path: str, folder: str):
     r = requests.get(subfolder_url)
     html_data = r.content
     parsed_data = BeautifulSoup(html_data, "html.parser")
-    links = parsed_data.find_all("a", href=true)
+    links = parsed_data.find_all("a", href=True)
     for link in links:
+        print(f"link url: {link}")
         if link.get("href"):
             if link["href"].endswith("xml.gz"):
                 full_url = os.path.join(subfolder_url, link["href"])
                 full_name = os.path.join(full_subfolder_name, link["href"])
                 https(full_url, full_name)
-
-
-# if __name__ == "__main__":
-#    url = "https://www.enzyme-database.org/downloads/enzyme-data.xml.gz"
-#    filename = "explorenz_data.xml.gz"
-#    success = http(http, filename)
-#
-#    if success:
-#        print(f"File downloaded successfully: {filename}")
-#    else:
-#        print("Download failed!")
-
-# if __name__ == "__main__":
-#    # FTP server credentials
-#    ftp_host = "ftp.expasy.org"
-#    # ftp_user = 'username'
-#    # ftp_passwd = 'password'
-#
-#    # Remote and local file paths
-#    path_file = "/databases/uniprot/current_release/knowledgebase/complete/"
-#    remote_file = "uniprot_sprot.dat.gz"
-#    local_file = "uniprot_sprot.dat.gz"
-#
-#    # Download the file with error handling
-#    ftp_file(ftp_host, path_file, remote_file, local_file)
