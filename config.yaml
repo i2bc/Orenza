@@ -1,4 +1,4 @@
-output: /home/demonz/programmation/stage/orenza/af2_web/bioi2server/orenza/script/data/
+output: /home/demonz/programmation/stage/orenza/af2_web/bioi2server/orenza/script/
 database: /home/demonz/programmation/stage/orenza/af2_web/bioi2server/orenza/script/db/db_orenza.sqlite3
 
 explorenz:

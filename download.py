@@ -3,6 +3,8 @@ import sys
 import requests
 import os
 from bs4 import BeautifulSoup
+import logging
+from time import sleep
 
 
 # TODO: delete or https
@@ -53,7 +55,6 @@ def ftp(
         # Connect to the FTP server
         ftp = FTP(ftp_host)
         ftp.login(user=ftp_user, passwd=ftp_passwd)
-        print(ftp_host)
 
         # Download the file
         with open(local_file, "wb") as local_fp:
@@ -61,8 +62,6 @@ def ftp(
 
         # Close the FTP connection
         ftp.quit()
-        # TODO Print to log
-        print(f"File '{remote_file}' downloaded successfully as '{local_file}'")
     except Exception as e:
         print(f"Error: {e}")
         sys.exit(1)
@@ -87,52 +86,76 @@ def https(url: str, filename: str):
         print(f"Failed to download_file {basename}")
 
 
+def retry_request(url, retries=3, backoff_factor=0.3):
+    """
+    Make a GET request to a URL with retries.
+    Args:
+        url: URL to make request to.
+        retries: Number of retries.
+        backoff_factor: Time factor for exponential backoff.
+    Returns:
+        Response object if successful, None otherwise.
+    """
+    for i in range(retries):
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+            return response
+        except requests.RequestException as e:
+            logging.error(f"Attempt {i+1} failed for URL {url}: {e}")
+            sleep(backoff_factor * (2**i))
+    return None
+
+
 def pdb_get_subfolder(url: str):
     """
-    Get a list of the links (url) on the page
+    Get a list of the links (url) on the page.
     Args:
-        url: link to the page
-
+        url: Link to the page.
+    Returns:
+        List of subfolder names.
     """
-    r = requests.get(url)
-    html_data = r.content
-
-    parsed_data = BeautifulSoup(html_data, "html.parser")
-
-    links = parsed_data.find_all("a", href=True)
-    folders = []
-    for link in links:
-        if link.get("href"):
-            if (
-                len(link["href"]) == 3
-            ):  # Ensure that the link is of the format letter/digit letter/digit
-                if link["href"] not in folders:
-                    folders.append(link["href"])
-    return folders
+    response = retry_request(url)
+    if response:
+        html_data = response.content
+        parsed_data = BeautifulSoup(html_data, "html.parser")
+        links = parsed_data.find_all("a", href=True)
+        folders = [link["href"] for link in links if len(link["href"]) == 3]
+        return list(set(folders))
+    return []
 
 
 def pdb_download_subfolder(base_url: str, output_path: str, folder: str):
     """
-    download all the content contained in the specified subfolder
+    Download all the content contained in the specified subfolder.
     Args:
-        base_url: the page containing the subfolder
-        output_path: path where the folders will be download
-        folder: name of the folder to download
+        base_url: The page containing the subfolder.
+        output_path: Path where the folders will be downloaded.
+        folder: Name of the folder to download.
     """
     subfolder_url = os.path.join(base_url, folder)
-    subfolder_name = folder[:-1]
-    full_subfolder_name = os.path.join(output_path, subfolder_name)
-    if not os.path.exists(full_subfolder_name):
-        os.makedirs(full_subfolder_name)
+    subfolder_name = folder.rstrip("/")
+    full_subfolder_path = os.path.join(output_path, subfolder_name)
 
-    r = requests.get(subfolder_url)
-    html_data = r.content
-    parsed_data = BeautifulSoup(html_data, "html.parser")
-    links = parsed_data.find_all("a", href=True)
-    for link in links:
-        print(f"link url: {link}")
-        if link.get("href"):
+    if not os.path.exists(full_subfolder_path):
+        os.makedirs(full_subfolder_path)
+
+    response = retry_request(subfolder_url)
+    if response:
+        html_data = response.content
+        parsed_data = BeautifulSoup(html_data, "html.parser")
+        links = parsed_data.find_all("a", href=True)
+
+        for link in links:
             if link["href"].endswith("xml.gz"):
                 full_url = os.path.join(subfolder_url, link["href"])
-                full_name = os.path.join(full_subfolder_name, link["href"])
-                https(full_url, full_name)
+                full_name = os.path.join(full_subfolder_path, link["href"])
+                download_file(full_url, full_name)
+
+
+def download_file(url, local_path):
+    response = retry_request(url)
+    if response:
+        with open(local_path, "wb") as f:
+            f.write(response.content)
+        logging.info(f"Downloaded {url} to {local_path}")

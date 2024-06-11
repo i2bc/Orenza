@@ -3,6 +3,7 @@
 import sys
 import parse
 import utils
+import customLog
 
 
 def uniprot(filename, database, table_type):
@@ -44,17 +45,13 @@ def uniprot(filename, database, table_type):
 
             query_uniprot = f"INSERT INTO {uniprot_table} (accession) VALUES (?)"
             cur.execute(query_uniprot, (accession,))
-            tuple_list_ec = uniprot_data[
-                key
-            ][
+            tuple_list_ec = uniprot_data[key][
                 "ec_numbers"
             ]  # data structure : [(ec_number1, ec_complete), (ec_number2, ec_complete)...]
             for tup in tuple_list_ec:
                 query_joint_table = f"INSERT INTO {joint_table} (id, {table_type}_id, ec_id) VALUES(Null, ?, ?)"
                 cur.execute(query_joint_table, (accession, tup[0]))
-                query_pk_exist = (
-                    f"SELECT EXISTS (SELECT 1 FROM {ec_table} WHERE number =?)"
-                )
+                query_pk_exist = f"SELECT EXISTS (SELECT 1 FROM {ec_table} WHERE number =?)"
                 cur.execute(query_pk_exist, (tup[0],))
                 exists = cur.fetchone()[0]
                 if not exists:
@@ -72,7 +69,7 @@ def explorenz_ec(filename: str, database: str):
         filename: path and name of the parsing file (pickle format)
         database: path and name of the database to be updated
     """
-    print(f"Start updating explorenz_ec database at {utils.current_time()}")
+    logger.info("Start updating")
     table = "orenza_enzyme"
     con = utils.create_connection(database)
     if not con:
@@ -83,10 +80,10 @@ def explorenz_ec(filename: str, database: str):
         cur.execute(f"DELETE FROM {table}")
         con.commit()
 
-    print(f"Start loading data at {utils.current_time()}")
+    logger.info("Start loading data")
     enzyme_data = utils.load_pickle(filename)
 
-    print(f"Start creating database at {utils.current_time()}")
+    logger.info("Start populating table")
     if enzyme_data:
         for key in enzyme_data:
             ec_number = key
@@ -135,7 +132,7 @@ def explorenz_ec(filename: str, database: str):
         con.close()
     else:
         print("Enzyme pickle couldn't be read")
-    print(f"Finished updating explorenz ec table at {utils.current_time()}")
+    logger.info("Finished populating table")
 
 
 def explorenz_nomenclature(filename: str, database: str):
@@ -225,15 +222,11 @@ def brenda(filename: str, database: str):
             ec_number = key
             species = brenda_data[key]["species"]
             for specie in species:
-                query_ec_exist = (
-                    f"SELECT EXISTS (SELECT 1 FROM {enzyme_table} WHERE ec_number =?)"
-                )
+                query_ec_exist = f"SELECT EXISTS (SELECT 1 FROM {enzyme_table} WHERE ec_number =?)"
                 cur.execute(query_ec_exist, (ec_number,))
                 ec_exists = cur.fetchone()[0]
                 if ec_exists:
-                    query_name_exist = (
-                        f"SELECT EXISTS (SELECT 1 FROM {table} WHERE name=?)"
-                    )
+                    query_name_exist = f"SELECT EXISTS (SELECT 1 FROM {table} WHERE name=?)"
                     cur.execute(query_name_exist, (specie,))
                     name_exists = cur.fetchone()[0]
                     if not name_exists:
@@ -292,9 +285,7 @@ def kegg(filename: str, database: str):
         for pathway_class in kegg_data:
             for pathway in kegg_data[pathway_class]:
                 ec_numbers = kegg_data[pathway_class][pathway]
-                query_pathway_exist = (
-                    f"SELECT EXISTS (SELECT 1 FROM {table} WHERE pathway=?)"
-                )
+                query_pathway_exist = f"SELECT EXISTS (SELECT 1 FROM {table} WHERE pathway=?)"
                 cur.execute(query_pathway_exist, (pathway,))
                 pathway_exists = cur.fetchone()[0]
                 if not pathway_exists:
@@ -355,9 +346,7 @@ def pdb(filename: str, database: str):
         for key in pdb_data:
             ec_number = key
             id_tuple = pdb_data[key]
-            query_ec_exist = (
-                f"SELECT EXISTS (SELECT 1 FROM {enzyme_table} WHERE ec_number=?)"
-            )
+            query_ec_exist = f"SELECT EXISTS (SELECT 1 FROM {enzyme_table} WHERE ec_number=?)"
             cur.execute(query_ec_exist, (ec_number,))
             ec_exists = cur.fetchone()[0]
             if not ec_exists:

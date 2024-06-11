@@ -50,6 +50,7 @@ def gunzip_file(input_file: str, output_file: str, block_size=65536):
                         break
                     else:
                         f_out.write(block)
+    # WARN: dont just throw exception, catch a specific one
     except Exception as e:
         print(f"Error occurred while trying to unzip: {input_file}, error: {e}")
 
@@ -221,7 +222,7 @@ def explorenz_ec(input_file: str, output_file: str):
                 data[ec_num.text]["created"] = created
             ec_action = row.find("field[@name='action']")
             if (
-                ec_action.text == "deleted"
+                ec_action.text == "deleted" or ec_action.text == "transferred"
             ):  # check history to the deleted action because the entry is still present even if deleted
                 data.pop(ec_num.text)
     utils.save_pickle(data, output_file)
@@ -371,8 +372,3 @@ def pdb(input_file: str):
         if ec_number:
             result[ec_number] = [(pdb_id, uniprot_id)]
     return result
-
-
-"""
-----------------Test---------------
-"""
