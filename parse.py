@@ -3,7 +3,6 @@
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import gzip
 import tarfile
-import pickle
 import xml.etree.ElementTree as ET
 import re
 import os
@@ -34,13 +33,17 @@ def strip_tags(html):
     return s.get_data()
 
 
-def gunzip_file(input_file: str, output_file: str, block_size=65536):
+def gunzip_file(input_file: str, output_file: str, logger, block_size=65536):
     """
     This function decompress a .gz file and write it as a decompressed file
     Args:
         input_file : path to the file to be decompressed
         output_file: path and name to the decompressed file
     """
+    if not os.path.exists(input_file):
+        logger.error(f"Input file does not exist: {input_file}")
+        return
+
     try:
         with gzip.open(input_file, "rb") as f_in:
             with open(output_file, "wb") as f_out:
@@ -48,11 +51,14 @@ def gunzip_file(input_file: str, output_file: str, block_size=65536):
                     block = f_in.read(block_size)
                     if not block:
                         break
-                    else:
-                        f_out.write(block)
-    # WARN: dont just throw exception, catch a specific one
+                    f_out.write(block)
+        logger.info(f"Decompression complete: {output_file}")
+    except FileNotFoundError:
+        logger.exception(f"File not found: {input_file}")
+    except OSError as e:
+        logger.exception(f"OS error occurred: {str(e)}")
     except Exception as e:
-        print(f"Error occurred while trying to unzip: {input_file}, error: {e}")
+        logger.exception(f"An unexpected error occurred: {str(e)}")
 
 
 def extract_tar(input_file: str, output_folder: str):
@@ -72,7 +78,6 @@ def read_uniprot(input_file: str):
     """
     with open(input_file, "r") as f:
         line = f.readline()
-        i = 0
         current = ""
         contain_ec = False
         while line:
@@ -86,11 +91,10 @@ def read_uniprot(input_file: str):
                     yield current
                 current = ""
                 contain_ec = False
-
             line = f.readline()
 
 
-def uniprot(input_file: str, output_file: str):
+def uniprot(input_file: str, output_file: str, logger):
     """
     Parse the data of uniprot.dat type of file
 
@@ -130,7 +134,7 @@ def uniprot(input_file: str, output_file: str):
 
         data[accession]["ec_numbers"] = list_ec_complete
 
-    utils.save_pickle(data=data, output_file=output_file)
+    utils.save_pickle(data=data, output_file=output_file, logger=logger)
 
 
 """
@@ -188,7 +192,7 @@ Data structure of the xml that I get as of 24/04/2024
 """
 
 
-def explorenz_ec(input_file: str, output_file: str):
+def explorenz_ec(input_file: str, output_file: str, logger):
     """
     This function parse the data of an xml file from parse_explorenz
     and extract the entry info of the ec number
@@ -225,7 +229,7 @@ def explorenz_ec(input_file: str, output_file: str):
                 ec_action.text == "deleted" or ec_action.text == "transferred"
             ):  # check history to the deleted action because the entry is still present even if deleted
                 data.pop(ec_num.text)
-    utils.save_pickle(data, output_file)
+    utils.save_pickle(data, output_file, logger)
 
 
 """
@@ -244,7 +248,7 @@ def explorenz_ec(input_file: str, output_file: str):
 """
 
 
-def explorenz_nomenclature(input_file: str, output_file: str):
+def explorenz_nomenclature(input_file: str, output_file: str, logger):
     """
     This function parse the data of an xml file from parse_explorenz
     and extract the class information to build the nomenclature
@@ -278,10 +282,10 @@ def explorenz_nomenclature(input_file: str, output_file: str):
                 "third_number": third.text,
                 "heading": heading,
             }
-    utils.save_pickle(data, output_file)
+    utils.save_pickle(data, output_file, logger)
 
 
-def brenda(input_file: str, output_file: str):
+def brenda(input_file: str, output_file: str, logger):
     """
     This function parse the .txt from brenda and extract the ec number
     and the associated species.
@@ -317,10 +321,10 @@ def brenda(input_file: str, output_file: str):
                 ec_number = ""
                 species.clear()
                 new_query = True
-        utils.save_pickle(data, output_file)
+        utils.save_pickle(data, output_file, logger)
 
 
-def multiprocessing_pdb_iterate(root_dir: str, output_file: str):
+def multiprocessing_pdb_iterate(root_dir: str, output_file: str, logger):
     data = {}
     with ProcessPoolExecutor() as executor:
         futures = []
@@ -337,7 +341,7 @@ def multiprocessing_pdb_iterate(root_dir: str, output_file: str):
                 else:
                     data[ec_number] = values
 
-    utils.save_pickle(data, output_file)
+    utils.save_pickle(data, output_file, logger)
 
 
 # Precompiling to improve efficiency over multiple files

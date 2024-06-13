@@ -2,7 +2,7 @@ import utils
 import sys
 
 
-def swiss_explorenz(database: str, table_type: str):
+def swiss_explorenz(database: str, table_type: str, logger):
     """
     Update enzyme table based on the information of the joint table of ec and sprot or trembl
     Args:
@@ -16,10 +16,9 @@ def swiss_explorenz(database: str, table_type: str):
     ec_table = "orenza_ec"
     enzyme_table = "orenza_enzyme"
 
-    con = utils.create_connection(database=database)
+    con = utils.create_connection(database=database, logger=logger)
 
     if not con:
-        print("Couldn't load the database properly see previous error messages")
         sys.exit()
 
     cur = con.cursor()
@@ -43,14 +42,13 @@ def swiss_explorenz(database: str, table_type: str):
     con.close()
 
 
-def species(database: str):
+def species(database: str, logger):
     joint_table = "orenza_species_enzymes"
     enzyme_table = "orenza_enzyme"
 
-    con = utils.create_connection(database=database)
+    con = utils.create_connection(database=database, logger=logger)
 
     if not con:
-        print("Couldn't load the database properly see previous error messages")
         sys.exit()
 
     cur = con.cursor()
@@ -66,23 +64,20 @@ def species(database: str):
             query_count = f"SELECT COUNT(*) FROM {joint_table} where enzyme_id=?"
             cur.execute(query_count, ec)
             count = cur.fetchone()
-            query_update = (
-                f"UPDATE {enzyme_table} SET species_count=? WHERE ec_number=?"
-            )
+            query_update = f"UPDATE {enzyme_table} SET species_count=? WHERE ec_number=?"
             data_update = (count[0], ec[0])
             cur.execute(query_update, data_update)
             con.commit()
     con.close()
 
 
-def pdb(database: str):
+def pdb(database: str, logger):
     pdb_table = "orenza_pdb"
     enzyme_table = "orenza_enzyme"
 
-    con = utils.create_connection(database=database)
+    con = utils.create_connection(database=database, logger=logger)
 
     if not con:
-        print("Couldn't load the database properly see previous error messages")
         sys.exit()
 
     cur = con.cursor()

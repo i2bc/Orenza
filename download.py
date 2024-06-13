@@ -8,7 +8,7 @@ from time import sleep
 
 
 # TODO: delete or https
-def http(url, local_file):
+def http(url, filename, logger):
     """
     Downloads a file from the specified URL and saves it with the given filename (using http link).
 
@@ -23,14 +23,14 @@ def http(url, local_file):
         response = requests.get(url, stream=True)
         response.raise_for_status()  # Raise an exception for non-200 status codes
 
-        with open(local_file, "wb") as file:
+        with open(filename, "wb") as file:
             for chunk in response.iter_content(1024):
                 if chunk:
                     file.write(chunk)
         return True
 
     except requests.exceptions.RequestException as e:
-        print(f"Download failed: {e}")
+        logger.exception(e)
         return False
 
 
@@ -38,6 +38,7 @@ def ftp(
     ftp_host: str,
     remote_file: str,
     local_file: str,
+    logger,
     ftp_user="anonymous",
     ftp_passwd="anonymous@",
 ):
@@ -49,7 +50,7 @@ def ftp(
         remote_file: path to the remote file excluding the ftp_host name
         local_file: name and location of the downloaded file
         ftp_user: name to use if needed to connect, anonymous by default
-        fpt_passwd: password to use if needed to connect, anonymous@ by default
+        ftp_passwd: password to use if needed to connect, anonymous@ by default
     """
     try:
         # Connect to the FTP server
@@ -63,29 +64,11 @@ def ftp(
         # Close the FTP connection
         ftp.quit()
     except Exception as e:
-        print(f"Error: {e}")
+        logger.exception("Ftp exception: ", e)
         sys.exit(1)
 
 
 # PDB
-
-
-def https(url: str, filename: str):
-    """
-    Download file from an url using https
-    Args:
-        url: link to the https to download_file
-        filename: name of the downloaded file
-    """
-    response = requests.get(url)
-    if response.status_code == 200:
-        with open(filename, "wb") as f:
-            f.write(response.content)
-    else:
-        basename = os.path.basename(filename)
-        print(f"Failed to download_file {basename}")
-
-
 def retry_request(url, retries=3, backoff_factor=0.3):
     """
     Make a GET request to a URL with retries.

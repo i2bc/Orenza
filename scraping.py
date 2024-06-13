@@ -27,7 +27,6 @@ def kegg(url: str, output_file: str):
         match = re.match(pattern, pathway_class.text)
         if match:
             pathway_class_name = match.group(1)
-            print(pathway_class_name)
         links = list_element.find_all("a", href=True)
         for link in links:
             if link["href"].startswith("/pathway/"):

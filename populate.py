@@ -1,12 +1,9 @@
 #!/usr/bin/env python
-
 import sys
-import parse
 import utils
-import customLog
 
 
-def uniprot(filename, database, table_type):
+def uniprot(filename, database, table_type, logger):
     """
     Initialize the table trembl or sprot with the info of the parsing
     and the joint table between ec and this one
@@ -19,13 +16,12 @@ def uniprot(filename, database, table_type):
     if table_type not in ["sprot", "trembl"]:
         raise ValueError("Invalid table_type. Allowed values are 'sprot' or 'trembl'.")
 
-    print(f"Start updating {table_type} database at: {utils.current_time()}")
+    logger.info("Start updating table")
     uniprot_table = f"orenza_{table_type}"
     joint_table = f"orenza_{table_type}_ec_numbers"
     ec_table = "orenza_ec"
-    con = utils.create_connection(database)
+    con = utils.create_connection(database, logger)
     if not con:
-        print("Couldn't load the database properly see previous error messages")
         sys.exit()
 
     cur = con.cursor()
@@ -35,10 +31,10 @@ def uniprot(filename, database, table_type):
         cur.execute(f"DELETE FROM {joint_table}")
         con.commit()
 
-    print(f"Start loading data at {utils.current_time()}")
-    uniprot_data = utils.load_pickle(filename)
+    logger.info("Start loading data")
+    uniprot_data = utils.load_pickle(filename, logger)
 
-    print(f"Start creating database at {utils.current_time()}")
+    logger.info("Start creating table")
     if uniprot_data:
         for key in uniprot_data:
             accession = key
@@ -58,10 +54,10 @@ def uniprot(filename, database, table_type):
                     query_ec = f"INSERT INTO {ec_table} (number, complete) VALUES(?, ?)"
                     cur.execute(query_ec, tup)
             con.commit()
-    print(f"Finished updating {table_type} table at: {utils.current_time()}")
+    logger.info("Finished updating table")
 
 
-def explorenz_ec(filename: str, database: str):
+def explorenz_ec(filename: str, database: str, logger):
     """
     Initialize the enzyme table with the info from the parsing
 
@@ -71,9 +67,8 @@ def explorenz_ec(filename: str, database: str):
     """
     logger.info("Start updating")
     table = "orenza_enzyme"
-    con = utils.create_connection(database)
+    con = utils.create_connection(database, logger)
     if not con:
-        print("Couldn't load the database properly see previous error messages")
         sys.exit()
     cur = con.cursor()
     if cur.execute(f"SELECT EXISTS (SELECT 1 FROM {table})"):
@@ -81,7 +76,7 @@ def explorenz_ec(filename: str, database: str):
         con.commit()
 
     logger.info("Start loading data")
-    enzyme_data = utils.load_pickle(filename)
+    enzyme_data = utils.load_pickle(filename, logger)
 
     logger.info("Start populating table")
     if enzyme_data:
@@ -131,33 +126,32 @@ def explorenz_ec(filename: str, database: str):
         con.commit()
         con.close()
     else:
-        print("Enzyme pickle couldn't be read")
+        logger.error("Pickle could not be read")
     logger.info("Finished populating table")
 
 
-def explorenz_nomenclature(filename: str, database: str):
+def explorenz_nomenclature(filename: str, database: str, logger):
     """
     Populate nomenclature table with information from explorenz parsing
     Args:
         filename: path and name of the parsing file (pickle format)
         database: path and name of the database to be updated
     """
-    print(f"Start updating explorenz_nomenclature database at {utils.current_time()}")
+    logger.info("Start updating nomenclature table")
     table = "orenza_nomenclature"
-    con = utils.create_connection(database)
+    con = utils.create_connection(database, logger)
 
     if not con:
-        print("Couldn't load the database properly see previous error messages")
         sys.exit()
     cur = con.cursor()
     if cur.execute(f"SELECT EXISTS (SELECT 1 FROM {table})"):
         cur.execute(f"DELETE FROM {table}")
         con.commit()
 
-    print(f"Start loading data at {utils.current_time()}")
-    nomenclature_data = utils.load_pickle(filename)
+    logger.info("Start loading data")
+    nomenclature_data = utils.load_pickle(filename, logger)
 
-    print(f"Start creating database at {utils.current_time()}")
+    logger.info("Start creating table")
     if nomenclature_data:
         for key in nomenclature_data:
             ec_number = key
@@ -183,11 +177,11 @@ def explorenz_nomenclature(filename: str, database: str):
         con.commit()
         con.close()
     else:
-        print("Enzyme pickle couldn't be read")
-    print(f"Finished updating explorenz nomenclature table at {utils.current_time()}")
+        logger.error("Pickle could not be read")
+    logger.info("Finished updating nomenclature table")
 
 
-def brenda(filename: str, database: str):
+def brenda(filename: str, database: str, logger):
     """
     Initialize the  species table with the info of the parsing
     and the joint table between enzyme and this one
@@ -196,15 +190,14 @@ def brenda(filename: str, database: str):
         filename: the name and path of the data to be added to the database (pickle format)
         database: the name and path of the database to be updated
     """
-    print(f"Start updating species(brenda) table at {utils.current_time()}")
+    logger.info("Start updating table")
     table = "orenza_species"
     joint_table = "orenza_species_enzymes"
     enzyme_table = "orenza_enzyme"
 
-    con = utils.create_connection(database)
+    con = utils.create_connection(database, logger)
 
     if not con:
-        print("Couldn't load the database properly see previous error messages")
         sys.exit()
     cur = con.cursor()
     if cur.execute(f"SELECT EXISTS (SELECT 1 FROM {table})"):
@@ -212,10 +205,10 @@ def brenda(filename: str, database: str):
         cur.execute(f"DELETE FROM {joint_table}")
         con.commit()
 
-    print(f"Start loading data at {utils.current_time()}")
-    brenda_data = utils.load_pickle(filename)
+    logger.info("Start loading data")
+    brenda_data = utils.load_pickle(filename, logger)
 
-    print(f"Start creating database at {utils.current_time()}")
+    logger.info("Start creating table")
     if brenda_data:
         invalid_ec = []
         for key in brenda_data:
@@ -247,28 +240,27 @@ def brenda(filename: str, database: str):
 
         con.commit()
         con.close()
-        print(f"invalid_ec : {invalid_ec}")
+        logger.info("List of invalid ec (ec not updated to the current number to explorenz current notation):", invalid_ec)
     else:
-        print("Brenda pickle couldn't be read")
+        logger.error("Pickle could not be read")
 
-    print(f"Finished updating species table at {utils.current_time()}")
+    logger.info("Finished updated table")
 
 
-def kegg(filename: str, database: str):
+def kegg(filename: str, database: str, logger):
     """
     Initialize the  kegg table with the info of the scraping of kegg pathway page
     Args:
         filename: the name and path of the data to be added to the database (pickle format)
         database: the name and path of the database to be updated
     """
-    print(f"Start updating kegg pathway table at {utils.current_time()}")
+    logger.info("Start updating table")
     table = "orenza_kegg"
     joint_table = "orenza_kegg_enzymes"
     enzyme_table = "orenza_enzyme"
-    con = utils.create_connection(database)
+    con = utils.create_connection(database, logger)
 
     if not con:
-        print("Couldn't load the database properly see previous error messages")
         sys.exit()
     cur = con.cursor()
     if cur.execute(f"SELECT EXISTS (SELECT 1 FROM {table})"):
@@ -276,10 +268,10 @@ def kegg(filename: str, database: str):
         cur.execute(f"DELETE FROM {joint_table}")
         con.commit()
 
-    print(f"Start loading data at {utils.current_time()}")
-    kegg_data = utils.load_pickle(filename)
+    logger.info("Start loading data")
+    kegg_data = utils.load_pickle(filename, logger)
 
-    print(f"Start creating database at {utils.current_time()}")
+    logger.info("Start creating table")
     if kegg_data:
         invalid_ec = []
         for pathway_class in kegg_data:
@@ -310,37 +302,35 @@ def kegg(filename: str, database: str):
 
         con.commit()
         con.close()
-        print(f"invalid_ec : {invalid_ec}")
+        logger.info("List of invalid ec (ec not updated to the current number to explorenz current notation):", invalid_ec)
     else:
-        print("Kegg pickle couldn't be read")
+        logger.error("Pickle could not be read")
 
-    print(f"Finished updating kegg pathway table at {utils.current_time()}")
+    logger.info("Finished updating table")
 
 
-def pdb(filename: str, database: str):
+def pdb(filename: str, database: str, logger):
     """
     Initialize the  pdb table with the info of the parsed files of the pdb
     Args:
         filename: the name and path of the data to be added to the database (pickle format)
         database: the name and path of the database to be updated
     """
-    print(f"Start updating pdb table at {utils.current_time()}")
+    logger.info("Start updating table")
     table = "orenza_pdb"
     enzyme_table = "orenza_enzyme"
-    con = utils.create_connection(database)
+    con = utils.create_connection(database, logger)
 
     if not con:
-        print("Couldn't load the database properly see previous error messages")
         sys.exit()
     cur = con.cursor()
     if cur.execute(f"SELECT EXISTS (SELECT 1 FROM {table})"):
         cur.execute(f"DELETE FROM {table}")
         con.commit()
+    logger.info("Start loading data")
+    pdb_data = utils.load_pickle(filename, logger)
 
-    print(f"Start loading data at {utils.current_time()}")
-    pdb_data = utils.load_pickle(filename)
-
-    print(f"Start creating database at {utils.current_time()}")
+    logger.info("Start creating table")
     if pdb_data:
         invalid_ec = []
         for key in pdb_data:
@@ -358,8 +348,9 @@ def pdb(filename: str, database: str):
 
         con.commit()
         con.close()
-        print(f"invalid_ec : {invalid_ec}")
-    else:
-        print("PDB pickle couldn't be read")
 
-    print(f"Finished updating pdb table at {utils.current_time()}")
+        logger.info("List of invalid ec (ec not updated to the current number to explorenz current notation):", invalid_ec)
+    else:
+        logger.error("Pickle could not be read")
+
+    logger.info("Finished updating table")

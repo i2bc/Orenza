@@ -15,7 +15,7 @@ def current_time():
     return formatted_time
 
 
-def create_connection(database: str):
+def create_connection(database: str, logger):
     """
     Create a database connection to the SQLite database specified by db_file
     Parameters:
@@ -27,12 +27,11 @@ def create_connection(database: str):
     try:
         con = sqlite3.connect(database)
     except sqlite3.Error as e:
-        print("Error connecting to database: ", e)
-
+        logger.exception("Error connecting to database: ", e)
     return con
 
 
-def save_pickle(data: dict, output_file: str):
+def save_pickle(data: dict, output_file: str, logger):
     """
     This function stores a dictionary of parsed data as a pickle file.
     Args:
@@ -44,10 +43,10 @@ def save_pickle(data: dict, output_file: str):
         with open(output_file, "wb") as f:
             pickle.dump(data, f)
     except Exception as e:
-        print(f"Error occurred while saving pickle file: {e}")
+        logger.exception("Error occurred while saving pickle file: ", e)
 
 
-def load_pickle(input_file: str):
+def load_pickle(input_file: str, logger):
     """
     This function loads a pickle file.
     Args:
@@ -60,5 +59,5 @@ def load_pickle(input_file: str):
             data = pickle.load(f)
         return data
     except Exception as e:
-        print(f"Error occurred while loading pickle file: {e}")
+        logger.exception("Error occurred while loading pickle file: ", e)
         return None

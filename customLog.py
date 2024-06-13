@@ -19,7 +19,6 @@ logging.basicConfig(format=FORMAT, datefmt=DATE_FORMAT)
 logger = logging.getLogger("orenza")
 logger.setLevel(logging.INFO)
 
-
 def get_logger():
     return logger
 
