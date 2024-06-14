@@ -31,18 +31,20 @@ if update_explorenz:
 
     logger = customLog.set_context(logger, "explorenz")
 
-    logger.info("Start of the download")
-    download.http(url=explorenz_url, filename=explorenz_data_compressed, logger=logger)
-    parse.gunzip_file(input_file=explorenz_data_compressed, output_file=explorenz_data_uncompressed, logger=logger)
-    logger.info("Start of parsing")
-    parse.explorenz_ec(input_file=explorenz_data_uncompressed, output_file=explorenz_ec_pickle, logger=logger)
-    parse.explorenz_nomenclature(
-        input_file=explorenz_data_uncompressed, output_file=explorenz_nomenclature_pickle, logger=logger
-    )
+    if not os.path.exists(explorenz_ec_pickle) or not os.path.exists(explorenz_nomenclature_pickle):
 
-    for file in explorenz_file_delete:
-        if os.path.isfile(file):
-            os.remove(file)
+        logger.info("Start of the download")
+        download.http(url=explorenz_url, filename=explorenz_data_compressed, logger=logger)
+        parse.gunzip_file(input_file=explorenz_data_compressed, output_file=explorenz_data_uncompressed, logger=logger)
+        logger.info("Start of parsing")
+        parse.explorenz_ec(input_file=explorenz_data_uncompressed, output_file=explorenz_ec_pickle, logger=logger)
+        parse.explorenz_nomenclature(
+            input_file=explorenz_data_uncompressed, output_file=explorenz_nomenclature_pickle, logger=logger
+        )
+
+        for file in explorenz_file_delete:
+            if os.path.isfile(file):
+                os.remove(file)
 
     logger.info("Start of db populating")
     try:
@@ -65,16 +67,17 @@ if update_sprot:
 
     logger = customLog.set_context(logger, "sprot")
 
-    logger.info("Start of the download")
-    download.ftp(ftp_host=sprot_ftp, remote_file=sprot_remote_file, local_file=sprot_data_compressed, logger=logger)
-    logger.info("Start of the extraction")
-    parse.gunzip_file(input_file=sprot_data_compressed, output_file=sprot_data_uncompressed, logger=logger)
-    logger.info("Start of the parsing")
-    parse.uniprot(input_file=sprot_data_uncompressed, output_file=sprot_pickle, logger=logger)
+    if not os.path.exists(sprot_pickle):
+        logger.info("Start of the download")
+        download.ftp(ftp_host=sprot_ftp, remote_file=sprot_remote_file, local_file=sprot_data_compressed, logger=logger)
+        logger.info("Start of the extraction")
+        parse.gunzip_file(input_file=sprot_data_compressed, output_file=sprot_data_uncompressed, logger=logger)
+        logger.info("Start of the parsing")
+        parse.uniprot(input_file=sprot_data_uncompressed, output_file=sprot_pickle, logger=logger)
 
-    for file in sprot_file_delete:
-        if os.path.isfile(file):
-            os.remove(file)
+        for file in sprot_file_delete:
+            if os.path.isfile(file):
+                os.remove(file)
     try:
         logger.info("Start of db populating")
         populate.uniprot(filename=sprot_pickle, database=database, table_type="sprot", logger=logger)
@@ -93,17 +96,18 @@ if update_trembl:
     trembl_pickle = os.path.join(output_folder, "data", "trembl.pickle")
     trembl_file_delete = [trembl_data_compressed, trembl_data_uncompressed]
 
-    logger = customLog.set_context(logger, "trembl")
-    logger.info("Start of the download")
-    download.ftp(ftp_host=trembl_ftp, remote_file=trembl_remote_file, local_file=trembl_data_compressed, logger=logger)
-    logger.info("Start of the extraction")
-    parse.gunzip_file(input_file=trembl_data_compressed, output_file=trembl_data_uncompressed, logger=logger)
-    logger.info("Start of the parsing")
-    parse.uniprot(input_file=trembl_data_uncompressed, output_file=trembl_pickle, logger=logger)
+    if not os.path.exists(trembl_pickle):
+        logger = customLog.set_context(logger, "trembl")
+        logger.info("Start of the download")
+        download.ftp(ftp_host=trembl_ftp, remote_file=trembl_remote_file, local_file=trembl_data_compressed, logger=logger)
+        logger.info("Start of the extraction")
+        parse.gunzip_file(input_file=trembl_data_compressed, output_file=trembl_data_uncompressed, logger=logger)
+        logger.info("Start of the parsing")
+        parse.uniprot(input_file=trembl_data_uncompressed, output_file=trembl_pickle, logger=logger)
 
-    for file in trembl_file_delete:
-        if os.path.isfile(file):
-            os.remove(file)
+        for file in trembl_file_delete:
+            if os.path.isfile(file):
+                os.remove(file)
     try:
         logger.info("Start of db populating")
         populate.uniprot(filename=trembl_pickle, database=database, table_type="trembl", logger=logger)
@@ -136,14 +140,15 @@ if update_brenda:
 
     logger = customLog.set_context(logger, "brenda")
 
-    logger.info("Start of the extraction")
-    parse.extract_tar(brenda_data_compressed, output_folder)
-    logger.info("Start of the parsing")
-    parse.brenda(brenda_data_uncompressed, brenda_pickle, logger=logger)
+    if not os.path.exists(brenda_pickle):
+        logger.info("Start of the extraction")
+        parse.extract_tar(brenda_data_compressed, output_folder)
+        logger.info("Start of the parsing")
+        parse.brenda(brenda_data_uncompressed, brenda_pickle, logger=logger)
 
-    for file in brenda_file_delete:
-        if os.path.isfile(file):
-            os.remove(file)
+        for file in brenda_file_delete:
+            if os.path.isfile(file):
+                os.remove(file)
 
     try:
         logger.info("Start of db populating")
@@ -160,17 +165,19 @@ if update_pdb:
     pdb_pickle = os.path.join(output_folder, "data", "pdb.pickle")
     pdb_worker = config["pdb"]["worker"]
 
-    logger = customLog.set_context(logger, "pdb")
-    logger.info("Start of the download")
-    pdb_subfolders = download.pdb_get_subfolder(pdb_url)
-    executor = concurrent.futures.ThreadPoolExecutor(max_workers=pdb_worker)
-    futures = [
-        executor.submit(download.pdb_download_subfolder, pdb_url, pdb_subfolder_path, folder) for folder in pdb_subfolders
-    ]
-    concurrent.futures.wait(futures)
+    if not os.path.exists(pdb_pickle):
+        logger = customLog.set_context(logger, "pdb")
+        logger.info("Start of the download")
+        pdb_subfolders = download.pdb_get_subfolder(pdb_url)
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=pdb_worker)
+        futures = [
+            executor.submit(download.pdb_download_subfolder, pdb_url, pdb_subfolder_path, folder) for folder in pdb_subfolders
+        ]
+        concurrent.futures.wait(futures)
 
-    logger.info("Start of the parsing")
-    parse.multiprocessing_pdb_iterate(pdb_subfolder_path, pdb_pickle, logger=logger)
+        logger.info("Start of the parsing")
+        parse.multiprocessing_pdb_iterate(pdb_subfolder_path, pdb_pickle, logger=logger)
+
     logger.info("Start of db populating")
     populate.pdb(pdb_pickle, database, logger=logger)
     logger.info("End of protocol")
