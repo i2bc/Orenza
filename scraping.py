@@ -5,7 +5,7 @@ import utils
 from urllib.parse import urlparse
 
 
-def kegg(url: str, output_file: str):
+def kegg(url: str, output_file: str, logger):
     """
     Scrape the kegg pages containing the pathway and go through each pages to get all the ec ec_number
     contained in the rectangle (html shape)
@@ -47,4 +47,4 @@ def kegg(url: str, output_file: str):
                                 data[pathway_class_name][pathway] = []
                             if ec_number not in data[pathway_class_name][pathway]:
                                 data[pathway_class_name][pathway].append(ec_number)
-    utils.save_pickle(data=data, output_file=output_file)
+    utils.save_pickle(data=data, output_file=output_file, logger=logger)

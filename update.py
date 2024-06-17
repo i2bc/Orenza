@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import os
-import requests
 import yaml
 import download
 import parse
@@ -124,7 +123,7 @@ if update_kegg:
 
     logger = customLog.set_context(logger, "kegg")
     logger.info("Start of scraping")
-    scraping.kegg(kegg_url, kegg_pickle)
+    scraping.kegg(kegg_url, kegg_pickle, logger)
     logger.info("Start of db populating")
     populate.kegg(kegg_pickle, database, logger=logger)
     logger.info("End of protocol")
