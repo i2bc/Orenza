@@ -18,7 +18,7 @@ database = config["database"]
 logger = customLog.get_logger()
 
 ## Explorenz
-update_explorenz = config["download"]["explorenz"]
+update_explorenz = config["explorenz"]["update"]
 if update_explorenz:
 
     explorenz_url = config["explorenz"]["url"]
@@ -37,9 +37,11 @@ if update_explorenz:
         parse.gunzip_file(input_file=explorenz_data_compressed, output_file=explorenz_data_uncompressed, logger=logger)
         logger.info("Start of parsing")
         parse.explorenz_ec(input_file=explorenz_data_uncompressed, output_file=explorenz_ec_pickle, logger=logger)
+        # [CQ]: outputs a dict of {EC number: {infos}}, e.g. obj['1.1.1.1'] = {'accepted_name': 'alcohol dehydrogenase', 'reaction': '(1) a primary alcohol + NAD+[...]', 'other_names': 'aldehyde reductase; ADH; [...]', 'sys_name': 'alcohol:NAD+ oxidoreductase', 'comments': 'A zinc protein. Acts on primary [...]', 'links': 'BRENDA, EAWAG-BBD, EXPASY, GENE, GTD, KEGG, PDB', 'class': '1', 'subclass': '1', 'subsubclass': '1', 'serial': '1', 'status': None, 'diagram': 'For diagram of mevalonate biosynthesis, {terp/MVA}', 'cas_num': '9031-72-5', 'glossary': None, 'last_change': '2024-05-20 13:03:28', 'id': '1', 'created': '1961'}
         parse.explorenz_nomenclature(
             input_file=explorenz_data_uncompressed, output_file=explorenz_nomenclature_pickle, logger=logger
         )
+        # [CQ]: outputs a dict of {pseudo EC number: {infos}}, with all combinations of '?.?.?.-' e.g. obj['1.1.2.-'] = {'first_number': '1', 'second_number': '1', 'third_number': '2', 'heading': 'With a cytochrome as acceptor'}
 
         for file in explorenz_file_delete:
             if os.path.isfile(file):
@@ -55,7 +57,7 @@ if update_explorenz:
 
 
 ## Sprot
-update_sprot = config["download"]["sprot"]
+update_sprot = config["sprot"]["update"]
 if update_sprot:
     sprot_ftp = config["sprot"]["ftp"]
     sprot_remote_file = config["sprot"]["remote_file"]
@@ -86,7 +88,7 @@ if update_sprot:
     logger.info("End of protocol")
 
 ## Trembl
-update_trembl = config["download"]["trembl"]
+update_trembl = config["trembl"]["update"]
 if update_trembl:
     trembl_ftp = config["trembl"]["ftp"]
     trembl_remote_file = config["trembl"]["remote_file"]
@@ -116,7 +118,7 @@ if update_trembl:
     logger.info("End of protocol")
 
 # Kegg
-update_kegg = config["download"]["kegg"]
+update_kegg = config["kegg"]["update"]
 if update_kegg:
     kegg_url = config["kegg"]["url"]
     kegg_pickle = os.path.join(output_folder, "data", "kegg.pickle")
@@ -129,7 +131,7 @@ if update_kegg:
     logger.info("End of protocol")
 
 # Brenda
-update_brenda = config["download"]["brenda"]
+update_brenda = config["brenda"]["update"]
 if update_brenda:
     brenda_data_compressed = os.path.join(output_folder, "data", config["brenda"]["compressed_file"])
     brenda_data_uncompressed = brenda_data_compressed.replace(".tar.gz", "")
@@ -157,7 +159,7 @@ if update_brenda:
     logger.info("End of the protocol")
 
 # PDB
-update_pdb = config["download"]["pdb"]
+update_pdb = config["pdb"]["update"]
 if update_pdb:
     pdb_url = config["pdb"]["url"]
     pdb_subfolder_path = os.path.join(output_folder, "pdb")
