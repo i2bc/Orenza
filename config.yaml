@@ -13,6 +13,11 @@ explorenz:
   url: https://www.enzyme-database.org/downloads/enzyme-data.xml.gz
   output_file: explorenz_data.xml.gz
 
+uniprot:
+  ftp: ftp.expasy.org
+  remote_file: /databases/uniprot/current_release/knowledgebase/complete/reldate.txt
+  output_file: uniprot_reldate.txt
+
 sprot:
   ftp: ftp.expasy.org
   remote_file: /databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.dat.gz
