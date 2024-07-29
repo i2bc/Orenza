@@ -18,7 +18,7 @@ database = config["database"]
 logger = customLog.get_logger()
 
 ## Explorenz
-update_explorenz = config["explorenz"]["update"]
+update_explorenz = config["download"]["explorenz"]
 if update_explorenz:
 
     explorenz_url = config["explorenz"]["url"]
@@ -57,7 +57,7 @@ if update_explorenz:
 
 
 ## Sprot
-update_sprot = config["sprot"]["update"]
+update_sprot = config["download"]["sprot"]
 if update_sprot:
     sprot_ftp = config["sprot"]["ftp"]
     sprot_remote_file = config["sprot"]["remote_file"]
@@ -88,7 +88,7 @@ if update_sprot:
     logger.info("End of protocol")
 
 ## Trembl
-update_trembl = config["trembl"]["update"]
+update_trembl = config["download"]["trembl"]
 if update_trembl:
     trembl_ftp = config["trembl"]["ftp"]
     trembl_remote_file = config["trembl"]["remote_file"]
@@ -97,8 +97,8 @@ if update_trembl:
     trembl_pickle = os.path.join(output_folder, "data", "trembl.pickle")
     trembl_file_delete = [trembl_data_compressed, trembl_data_uncompressed]
 
+    logger = customLog.set_context(logger, "trembl")
     if not os.path.exists(trembl_pickle):
-        logger = customLog.set_context(logger, "trembl")
         logger.info("Start of the download")
         download.ftp(ftp_host=trembl_ftp, remote_file=trembl_remote_file, local_file=trembl_data_compressed, logger=logger)
         logger.info("Start of the extraction")
@@ -118,20 +118,23 @@ if update_trembl:
     logger.info("End of protocol")
 
 # Kegg
-update_kegg = config["kegg"]["update"]
+update_kegg = config["download"]["kegg"]
 if update_kegg:
     kegg_url = config["kegg"]["url"]
     kegg_pickle = os.path.join(output_folder, "data", "kegg.pickle")
 
     logger = customLog.set_context(logger, "kegg")
-    logger.info("Start of scraping")
-    scraping.kegg(kegg_url, kegg_pickle, logger)
+
+    if not os.path.exists(kegg_pickle):
+        logger.info("Start of scraping")
+        scraping.kegg(kegg_url, kegg_pickle, logger)
+
     logger.info("Start of db populating")
     populate.kegg(kegg_pickle, database, logger=logger)
     logger.info("End of protocol")
 
 # Brenda
-update_brenda = config["brenda"]["update"]
+update_brenda = config["download"]["brenda"]
 if update_brenda:
     brenda_data_compressed = os.path.join(output_folder, "data", config["brenda"]["compressed_file"])
     brenda_data_uncompressed = brenda_data_compressed.replace(".tar.gz", "")
@@ -159,7 +162,7 @@ if update_brenda:
     logger.info("End of the protocol")
 
 # PDB
-update_pdb = config["pdb"]["update"]
+update_pdb = config["download"]["pdb"]
 if update_pdb:
     pdb_url = config["pdb"]["url"]
     pdb_subfolder_path = os.path.join(output_folder, "pdb")
