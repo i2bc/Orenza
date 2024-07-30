@@ -37,9 +37,11 @@ if update_explorenz:
         parse.gunzip_file(input_file=explorenz_data_compressed, output_file=explorenz_data_uncompressed, logger=logger)
         logger.info("Start of parsing")
         parse.explorenz_ec(input_file=explorenz_data_uncompressed, output_file=explorenz_ec_pickle, logger=logger)
+        # [CQ]: outputs a dict of {EC number: {infos}}, e.g. obj['1.1.1.1'] = {'accepted_name': 'alcohol dehydrogenase', 'reaction': '(1) a primary alcohol + NAD+[...]', 'other_names': 'aldehyde reductase; ADH; [...]', 'sys_name': 'alcohol:NAD+ oxidoreductase', 'comments': 'A zinc protein. Acts on primary [...]', 'links': 'BRENDA, EAWAG-BBD, EXPASY, GENE, GTD, KEGG, PDB', 'class': '1', 'subclass': '1', 'subsubclass': '1', 'serial': '1', 'status': None, 'diagram': 'For diagram of mevalonate biosynthesis, {terp/MVA}', 'cas_num': '9031-72-5', 'glossary': None, 'last_change': '2024-05-20 13:03:28', 'id': '1', 'created': '1961'}
         parse.explorenz_nomenclature(
             input_file=explorenz_data_uncompressed, output_file=explorenz_nomenclature_pickle, logger=logger
         )
+        # [CQ]: outputs a dict of {pseudo EC number: {infos}}, with all combinations of '?.?.?.-' e.g. obj['1.1.2.-'] = {'first_number': '1', 'second_number': '1', 'third_number': '2', 'heading': 'With a cytochrome as acceptor'}
 
         for file in explorenz_file_delete:
             if os.path.isfile(file):
@@ -95,8 +97,8 @@ if update_trembl:
     trembl_pickle = os.path.join(output_folder, "data", "trembl.pickle")
     trembl_file_delete = [trembl_data_compressed, trembl_data_uncompressed]
 
+    logger = customLog.set_context(logger, "trembl")
     if not os.path.exists(trembl_pickle):
-        logger = customLog.set_context(logger, "trembl")
         logger.info("Start of the download")
         download.ftp(ftp_host=trembl_ftp, remote_file=trembl_remote_file, local_file=trembl_data_compressed, logger=logger)
         logger.info("Start of the extraction")
@@ -122,8 +124,11 @@ if update_kegg:
     kegg_pickle = os.path.join(output_folder, "data", "kegg.pickle")
 
     logger = customLog.set_context(logger, "kegg")
-    logger.info("Start of scraping")
-    scraping.kegg(kegg_url, kegg_pickle, logger)
+
+    if not os.path.exists(kegg_pickle):
+        logger.info("Start of scraping")
+        scraping.kegg(kegg_url, kegg_pickle, logger)
+
     logger.info("Start of db populating")
     populate.kegg(kegg_pickle, database, logger=logger)
     logger.info("End of protocol")

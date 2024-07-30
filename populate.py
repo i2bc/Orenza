@@ -240,7 +240,8 @@ def brenda(filename: str, database: str, logger):
 
         con.commit()
         con.close()
-        logger.info("List of invalid ec (ec not updated to the current number to explorenz current notation):", invalid_ec)
+        print(invalid_ec)
+        #logger.info("List of invalid ec (ec not updated to the current number to explorenz current notation):", invalid_ec)
     else:
         logger.error("Pickle could not be read")
 
@@ -348,8 +349,8 @@ def pdb(filename: str, database: str, logger):
 
         con.commit()
         con.close()
-
-        logger.info("List of invalid ec (ec not updated to the current number to explorenz current notation):", invalid_ec)
+		print(invalid_ec)
+        #logger.info("List of invalid ec (ec not updated to the current number to explorenz current notation):", invalid_ec)
     else:
         logger.error("Pickle could not be read")
 
