@@ -214,11 +214,11 @@ def brenda(filename: str, database: str, logger):
         for key in brenda_data:
             ec_number = key
             species = brenda_data[key]["species"]
-            for specie in species:
-                query_ec_exist = f"SELECT EXISTS (SELECT 1 FROM {enzyme_table} WHERE ec_number =?)"
-                cur.execute(query_ec_exist, (ec_number,))
-                ec_exists = cur.fetchone()[0]
-                if ec_exists:
+            query_ec_exist = f"SELECT EXISTS (SELECT 1 FROM {enzyme_table} WHERE ec_number =?)"
+            cur.execute(query_ec_exist, (ec_number,))
+            ec_exists = cur.fetchone()[0]
+            if ec_exists:
+                for specie in species:
                     query_name_exist = f"SELECT EXISTS (SELECT 1 FROM {table} WHERE name=?)"
                     cur.execute(query_name_exist, (specie,))
                     name_exists = cur.fetchone()[0]
@@ -235,8 +235,8 @@ def brenda(filename: str, database: str, logger):
                     query_joint_table = f"""INSERT INTO {joint_table} (species_id, enzyme_id) VALUES (?, ?)"""
                     cur.execute(query_joint_table, (specie, ec_number))
 
-                if not ec_exists:
-                    invalid_ec.append(ec_number)
+            if not ec_exists:
+                invalid_ec.append(ec_number)
 
         con.commit()
         con.close()
