@@ -93,7 +93,7 @@ def pdb(database: str, logger):
             query_count = f"SELECT COUNT(*) FROM {pdb_table} where ec_number_id=?"
             cur.execute(query_count, ec)
             count = cur.fetchone()
-            query_update = f"UPDATE {enzyme_table} SET pdb_count=? WHERE ec_number=?"
+            query_update = f"UPDATE {enzyme_table} SET orphan=0 pdb_count=? WHERE ec_number=?"
             data_update = (count[0], ec[0])
             cur.execute(query_update, data_update)
             con.commit()
