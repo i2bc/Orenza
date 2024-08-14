@@ -1,13 +1,13 @@
-output: /home/demonz/programmation/stage/orenza/af2_web/bioi2server/orenza/script/
-database: /home/demonz/programmation/stage/orenza/af2_web/bioi2server/orenza/script/db/db_orenza.sqlite3
+output: /scratchlocal/chloe.quignot/update_orenza/script/
+database: /scratchlocal/chloe.quignot/update_orenza/script/db/db_orenza.sqlite3
 
 download:
   explorenz: true
-  sprot: false
-  trembl: false
-  kegg: false
+  sprot: true
+  trembl: true
+  kegg: true
   brenda: true
-  pdb: false
+  pdb: true
 
 explorenz:
   url: https://www.enzyme-database.org/downloads/enzyme-data.xml.gz
@@ -37,4 +37,4 @@ brenda:
 
 pdb:
   url: https://files.rcsb.org/pub/pdb/data/structures/divided/XML/
-  worker: 500
+  worker: 20
