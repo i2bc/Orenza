@@ -1,5 +1,6 @@
-output: /scratchlocal/chloe.quignot/update_orenza/script/
-database: /scratchlocal/chloe.quignot/update_orenza/script/db/db_orenza.sqlite3
+output: /path/to/orenza/workdir
+database: /path/where/final/db/is/saved/db_orenza.sqlite3
+tmpdir: /tmp
 
 download:
   explorenz: true
@@ -33,8 +34,9 @@ kegg:
 
 # To download here : https://www.brenda-enzymes.org/download.php (require manual validation for dl)
 brenda:
-  compressed_file: brenda_2023_1.txt.tar.gz
+  compressed_file: /path/to/brenda_2023_1.txt.tar.gz
 
 pdb:
   url: https://files.rcsb.org/pub/pdb/data/structures/divided/XML/
-  worker: 20
+  # multithreading
+  worker: 500
