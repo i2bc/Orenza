@@ -237,7 +237,7 @@ def main():
 
     database = config["database"]
     output_folder = config["output"]
-    tmpdir = config["tmpdir"]
+    tmpdir = os.path.join(config["tmpdir"],args.function)
 
     if not os.path.exists(os.path.join(tmpdir,"data")):
         os.makedirs(os.path.join(tmpdir,"data"),exist_ok=True)
@@ -250,32 +250,32 @@ def main():
     if args.function == "dl_explorenz":
         dl_explorenz(tmpdir,overwrite=args.overwrite)
         os.system(f"mv {tmpdir}/data/* {output_folder}/data/")
-        os.system(f"rm -r {tmpdir}/data/")
+        os.system(f"rm -r {tmpdir}")
     
     if args.function == "dl_sprot":
         dl_sprot(tmpdir,overwrite=args.overwrite)
         os.system(f"mv {tmpdir}/data/* {output_folder}/data/")
-        os.system(f"rm -r {tmpdir}/data/")
+        os.system(f"rm -r {tmpdir}")
 
     if args.function == "dl_trembl":
         dl_trembl(tmpdir,overwrite=args.overwrite)
         os.system(f"mv {tmpdir}/data/* {output_folder}/data/")
-        os.system(f"rm -r {tmpdir}/data/")
+        os.system(f"rm -r {tmpdir}")
 
     if args.function == "dl_kegg":
         dl_kegg(tmpdir,overwrite=args.overwrite)
         os.system(f"mv {tmpdir}/data/* {output_folder}/data/")
-        os.system(f"rm -r {tmpdir}/data/")
+        os.system(f"rm -r {tmpdir}")
 
     if args.function == "dl_brenda":
         dl_brenda(tmpdir,overwrite=args.overwrite)
         os.system(f"mv {tmpdir}/data/* {output_folder}/data/")
-        os.system(f"rm -r {tmpdir}/data/")
+        os.system(f"rm -r {tmpdir}")
 
     if args.function == "dl_pdb":
         dl_pdb(tmpdir,overwrite=args.overwrite)
         os.system(f"mv {tmpdir}/data/* {output_folder}/data/")
-        os.system(f"rm -r {tmpdir}/data/")
+        os.system(f"rm -r {tmpdir}")
 
     if args.function == "populate":
         if not os.path.exists(os.path.dirname(database)):
@@ -287,7 +287,7 @@ def main():
         populate_db(tmpdir,os.path.join(tmpdir,os.path.basename(database)))
         link_tables(os.path.join(tmpdir,os.path.basename(database)))
         os.system(f"mv {tmpdir}/{os.path.basename(database)} {database}")
-        os.system(f"rm -r {tmpdir}/data/")
+        os.system(f"rm -r {tmpdir}")
 
 
 if __name__ == "__main__":

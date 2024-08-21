@@ -1,5 +1,10 @@
 import logging
+import os
+import yaml
 
+with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),"config.yaml"), "r") as yaml_file:
+    config = yaml.load(yaml_file, Loader=yaml.FullLoader)
+os.makedirs(config['output'],exist_ok=True)
 
 class ContextLoggerAdapter(logging.LoggerAdapter):
     def process(self, msg, kwargs):
@@ -24,11 +29,11 @@ def get_logger():
 
 
 # Create file which log our messages
-fh_detailed = logging.FileHandler("orenza_detailed.log")
+fh_detailed = logging.FileHandler(os.path.join(config['output'],"orenza_detailed.log"))
 fh_detailed.setLevel(logging.INFO)
 fh_detailed.setFormatter(logging.Formatter(fmt=FORMAT, datefmt=DATE_FORMAT))
 
-fh_error = logging.FileHandler("orenza_error.log")
+fh_error = logging.FileHandler(os.path.join(config['output'],"orenza_error.log"))
 fh_error.setLevel(logging.ERROR)
 fh_error.setFormatter(logging.Formatter(fmt=FORMAT, datefmt=DATE_FORMAT))
 

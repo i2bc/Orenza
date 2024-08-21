@@ -63,8 +63,10 @@ def gunzip_file(input_file: str, output_file: str, logger, block_size=65536):
 
 def extract_tar(input_file: str, output_folder: str):
     with tarfile.open(input_file, "r") as f:
-        f.extractall(output_folder,filter='data')
-
+        try:
+            f.extractall(output_folder,filter='data')
+        except:
+            f.extractall(output_folder) # depends on python version
 
 # based on this https://web.expasy.org/docs/userman.html from 27/03/2024
 def read_uniprot(input_file: str):

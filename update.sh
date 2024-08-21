@@ -5,21 +5,21 @@
 #PBS -q common
 #PBS -j oe
 
-CONFIG=config.yaml
+set -x
+
+WORKDIR="/data/work/I2BC/chloe.quignot/test_orenza/orenzav2"
+
+CONFIG="$WORKDIR/config.yaml"
 function query(){
-    python -c 'import yaml,sys;config=yaml.safe_load(sys.stdin);print(config["download"].get("'$1'",""))' < $CONFIG
+    python3 -c 'import yaml,sys;config=yaml.safe_load(sys.stdin);print(config["download"].get("'$1'",""))' < $CONFIG
 }
 
-CMD="/usr/bin/python3 update.py"
-QSUB_OPTIONS="-l walltime=48:00:00 -l ncpus=1 -q common -j oe -N update_orenza -l mem=500Mb"
-QSUB_OPTIONS_PDB="-l walltime=48:00:00 -l ncpus=20 -q common -j oe -N update_orenza -l mem=500Mb"
-QSUB_OPTIONS_POP="-l walltime=48:00:00 -l ncpus=1 -q common -j oe -N update_orenza -l mem=8Gb"
+CMD="/usr/bin/python3 $WORKDIR/update.py"
+QSUB_OPTIONS="-V -S /bin/sh -l walltime=48:00:00 -l ncpus=1 -q common -j oe -N update_orenza -l mem=500Mb"
+QSUB_OPTIONS_PDB="-V -S /bin/sh -l walltime=48:00:00 -l ncpus=20 -q common -j oe -N update_orenza -l mem=500Mb"
+QSUB_OPTIONS_POP="-V -S /bin/sh -l walltime=48:00:00 -l ncpus=1 -q common -j oe -N update_orenza -l mem=8Gb"
 JOBIDS=()
 
-RES=$(query "explorenz")
-if [[ $RES == "True" || $RES == "true" ]]; then 
-    JOBIDS+=($(qsub $QSUB_OPTIONS -- $CMD "dl_explorenz"))
-fi
 RES=$(query "explorenz")
 if [[ $RES == "True" || $RES == "true" ]]; then 
     JOBIDS+=($(qsub $QSUB_OPTIONS -- $CMD "dl_explorenz"))
