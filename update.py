@@ -280,6 +280,8 @@ def main():
     if args.function == "populate":
         if not os.path.exists(os.path.dirname(database)):
             os.makedirs(os.path.dirname(database),exist_ok=True)
+        if args.overwrite:
+            os.system(f"rm {database}")
         if not os.path.exists(database):
             os.system(f"cp {os.path.dirname(os.path.abspath(__file__))}/db_orenza.sqlite3 {database}")
         os.system(f"cp {output_folder}/data/* {tmpdir}/data/")
