@@ -290,7 +290,7 @@ def main():
         link_tables(os.path.join(tmpdir,os.path.basename(database)))
         os.system(f"mv {tmpdir}/{os.path.basename(database)} {database}")
         os.system(f"rm -r {tmpdir}")
-
+        os.system(f'echo "End update: $(date +%F)" >> {output_folder}/last_update.txt')
 
 if __name__ == "__main__":
     main()    

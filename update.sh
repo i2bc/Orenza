@@ -1,3 +1,5 @@
+#! /bin/bash
+
 #PBS -l walltime=00:10:00
 #PBS -l mem=100Mb
 #PBS -N update_orenza
@@ -7,7 +9,7 @@
 
 set -x
 
-WORKDIR="/data/work/I2BC/chloe.quignot/test_orenza/orenzav2"
+WORKDIR=$(dirname $(readlink -f "$0"))
 
 CONFIG="$WORKDIR/config.yaml"
 function query(){
@@ -48,3 +50,8 @@ fi
 if [[ ${#JOBIDS[@]} -gt 0 ]]; then
     qsub $QSUB_OPTIONS_POP -W depend=afterok:$(IFS=: ; echo "${JOBIDS[*]}") -- $CMD "populate"
 fi
+
+OUTDIR=$(python3 -c 'import yaml,sys;config=yaml.safe_load(sys.stdin);print(config["output"])' < $CONFIG)
+mkdir -p $OUTDIR
+echo "Update start: $(date +%F)" > $OUTDIR/last_update.txt
+
