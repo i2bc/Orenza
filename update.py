@@ -235,8 +235,11 @@ def main():
                         help="Use this option to force overwrite of already existing pickle files.") 
     args = parser.parse_args()
 
-    database = config["database"]
+    input_database = config.get("input_database",None)
+    if not os.path.exists(input_database):
+       input_database = None
     output_folder = config["output"]
+    database = os.path.join(output_folder,"db","db_orenza.sqlite3")
     tmpdir = os.path.join(config["tmpdir"],args.function)
 
     if not os.path.exists(os.path.join(tmpdir,"data")):
@@ -280,10 +283,11 @@ def main():
     if args.function == "populate" or args.function == "all":
         if not os.path.exists(os.path.dirname(database)):
             os.makedirs(os.path.dirname(database),exist_ok=True)
-        if args.overwrite:
+        if not input_database or args.overwrite:
             os.system(f"rm {database}")
-        if not os.path.exists(database):
             os.system(f"cp {os.path.dirname(os.path.abspath(__file__))}/db_orenza.sqlite3 {database}")
+        else:
+            os.system(f"cp {input_database} {database}")
         os.system(f"cp {output_folder}/data/* {tmpdir}/data/")
         os.system(f"cp {database} {tmpdir}/")
         populate_db(tmpdir,os.path.join(tmpdir,os.path.basename(database)))

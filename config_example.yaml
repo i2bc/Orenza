@@ -1,5 +1,5 @@
 output: /path/to/orenza/workdir
-database: /path/where/final/db/is/saved/db_orenza.sqlite3
+input_database: /path/where/final/db/is/saved/db_orenza.sqlite3 # nothing if start from scratch
 tmpdir: /tmp
 
 download:
