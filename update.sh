@@ -17,9 +17,9 @@ function query(){
 }
 
 CMD="/usr/bin/python3 $WORKDIR/update.py"
-QSUB_OPTIONS="-V -S /bin/sh -l walltime=48:00:00 -l ncpus=1 -q common -j oe -N update_orenza -l mem=500Mb"
-QSUB_OPTIONS_PDB="-V -S /bin/sh -l walltime=48:00:00 -l ncpus=20 -q common -j oe -N update_orenza -l mem=500Mb"
-QSUB_OPTIONS_POP="-V -S /bin/sh -l walltime=48:00:00 -l ncpus=1 -q common -j oe -N update_orenza -l mem=8Gb"
+QSUB_OPTIONS="-V -S /bin/sh -l walltime=48:00:00 -l ncpus=1 -q common -j oe -N update_orenza -l mem=2Gb"
+QSUB_OPTIONS_PDB="-V -S /bin/sh -l walltime=48:00:00 -l ncpus=4 -q common -j oe -N update_orenza -l mem=64Gb"
+QSUB_OPTIONS_POP="-V -S /bin/sh -l walltime=48:00:00 -l ncpus=1 -q common -j oe -N update_orenza -l mem=12Gb"
 JOBIDS=()
 
 RES=$(query "explorenz")
