@@ -229,7 +229,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument('function', choices=['dl_explorenz', 'dl_sprot', 'dl_trembl', 
-                                             'dl_kegg', 'dl_brenda', 'dl_pdb', 'populate'], 
+                                             'dl_kegg', 'dl_brenda', 'dl_pdb', 'populate', 'all'], 
                         help="The function to execute.")
     parser.add_argument("--overwrite", action="store_true", 
                         help="Use this option to force overwrite of already existing pickle files.") 
@@ -247,37 +247,37 @@ def main():
     if args.function != "populate":
         os.system(f"cp {output_folder}/data/* {tmpdir}/data/")
 
-    if args.function == "dl_explorenz":
+    if (args.function == "dl_explorenz" or args.function == "all") and config["download"]["explorenz"]:
         dl_explorenz(tmpdir,overwrite=args.overwrite)
         os.system(f"mv {tmpdir}/data/* {output_folder}/data/")
         os.system(f"rm -r {tmpdir}")
     
-    if args.function == "dl_sprot":
+    if (args.function == "dl_sprot" or args.function == "all") and config["download"]["sprot"]:
         dl_sprot(tmpdir,overwrite=args.overwrite)
         os.system(f"mv {tmpdir}/data/* {output_folder}/data/")
         os.system(f"rm -r {tmpdir}")
 
-    if args.function == "dl_trembl":
+    if (args.function == "dl_trembl" or args.function == "all") and config["download"]["trembl"]:
         dl_trembl(tmpdir,overwrite=args.overwrite)
         os.system(f"mv {tmpdir}/data/* {output_folder}/data/")
         os.system(f"rm -r {tmpdir}")
 
-    if args.function == "dl_kegg":
+    if (args.function == "dl_kegg" or args.function == "all") and config["download"]["kegg"]:
         dl_kegg(tmpdir,overwrite=args.overwrite)
         os.system(f"mv {tmpdir}/data/* {output_folder}/data/")
         os.system(f"rm -r {tmpdir}")
 
-    if args.function == "dl_brenda":
+    if (args.function == "dl_brenda" or args.function == "all") and config["download"]["brenda"]:
         dl_brenda(tmpdir,overwrite=args.overwrite)
         os.system(f"mv {tmpdir}/data/* {output_folder}/data/")
         os.system(f"rm -r {tmpdir}")
 
-    if args.function == "dl_pdb":
+    if (args.function == "dl_pdb" or args.function == "all") and config["download"]["pdb"]:
         dl_pdb(tmpdir,overwrite=args.overwrite)
         os.system(f"mv {tmpdir}/data/* {output_folder}/data/")
         os.system(f"rm -r {tmpdir}")
 
-    if args.function == "populate":
+    if args.function == "populate" or args.function == "all":
         if not os.path.exists(os.path.dirname(database)):
             os.makedirs(os.path.dirname(database),exist_ok=True)
         if args.overwrite:

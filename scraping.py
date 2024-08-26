@@ -29,12 +29,14 @@ def kegg(url: str, output_file: str, logger):
             pathway_class_name = match.group(1)
         links = list_element.find_all("a", href=True)
         for link in links:
+            link_text = link.get_text(strip=True)
             if link["href"].startswith("/pathway/"):
                 r_path = requests.get(base_url + link["href"])
                 html_pathway = r_path.content
                 parsed_pathway = BeautifulSoup(html_pathway, "html.parser")
                 rects = parsed_pathway.find_all(shape="rect")
                 pathway = link["href"].split("/")[2]
+                full_pathway = pathway + " " + link_text
                 for rect in rects:
                     pattern = r"\d+\.\d+\.\d+\.\d+"
                     if rect.get("title"):
@@ -43,8 +45,8 @@ def kegg(url: str, output_file: str, logger):
                             ec_number = match.group()
                             if pathway_class_name not in data:
                                 data[pathway_class_name] = {}
-                            if pathway not in data[pathway_class_name]:
-                                data[pathway_class_name][pathway] = []
-                            if ec_number not in data[pathway_class_name][pathway]:
-                                data[pathway_class_name][pathway].append(ec_number)
+                            if full_pathway not in data[pathway_class_name]:
+                                data[pathway_class_name][full_pathway] = []
+                            if ec_number not in data[pathway_class_name][full_pathway]:
+                                data[pathway_class_name][full_pathway].append(ec_number)
     utils.save_pickle(data=data, output_file=output_file, logger=logger)
